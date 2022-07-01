@@ -1,1 +1,1 @@
-# go-die
+Go Dependency Injection Engine
