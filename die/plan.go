@@ -9,7 +9,7 @@ type plan interface {
 }
 
 type masterPlan interface {
-    plan
+	plan
 	Execute(ctx context.Context) error
 }
 

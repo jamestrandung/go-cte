@@ -15,27 +15,27 @@ type output interface {
 
 type CostConfigs die.AsyncResult
 
-func (r CostConfigs) GetBaseCost() float64 {
-	result := die.ExtractAsync[dummy.MergedCostConfigs](r.Task)
+func (c CostConfigs) GetBaseCost() float64 {
+	result := die.Outcome[dummy.MergedCostConfigs](c.Task)
 	return result.BaseCost
 }
 
-func (r CostConfigs) GetCostPerKilometer() float64 {
-	result := die.ExtractAsync[dummy.MergedCostConfigs](r.Task)
+func (c CostConfigs) GetCostPerKilometer() float64 {
+	result := die.Outcome[dummy.MergedCostConfigs](c.Task)
 	return result.CostPerKilometer
 }
 
-func (r CostConfigs) GetCostPerMinute() float64 {
-	result := die.ExtractAsync[dummy.MergedCostConfigs](r.Task)
+func (c CostConfigs) GetCostPerMinute() float64 {
+	result := die.Outcome[dummy.MergedCostConfigs](c.Task)
 	return result.CostPerMinute
 }
 
-func (r CostConfigs) GetPlatformFee() float64 {
-	result := die.ExtractAsync[dummy.MergedCostConfigs](r.Task)
+func (c CostConfigs) GetPlatformFee() float64 {
+	result := die.Outcome[dummy.MergedCostConfigs](c.Task)
 	return result.PlatformFee
 }
 
-func (r CostConfigs) GetVATPercent() float64 {
-	result := die.ExtractAsync[dummy.MergedCostConfigs](r.Task)
+func (c CostConfigs) GetVATPercent() float64 {
+	result := die.Outcome[dummy.MergedCostConfigs](c.Task)
 	return result.VATPercent
 }

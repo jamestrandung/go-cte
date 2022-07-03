@@ -22,7 +22,7 @@ func (bc bridgeComputer) Compute(ctx context.Context, p any) (any, error) {
 	return struct{}{}, bc.sc.Compute(ctx, p)
 }
 
-type ComputerKey struct{}
+type SideEffectKey struct{}
 
 type AsyncResult struct {
 	Task async.Task[any]
@@ -34,21 +34,21 @@ func newAsyncResult(t async.Task[any]) AsyncResult {
 	}
 }
 
-func ExtractAsync[V any](t async.Task[any]) V {
+func Outcome[V any](t async.Task[any]) V {
 	result, _ := t.Outcome()
 	return result.(V)
 }
 
 type SyncResult struct {
-	outcome any
+	Outcome any
 }
 
 func newSyncResult(o any) SyncResult {
 	return SyncResult{
-		outcome: o,
+		Outcome: o,
 	}
 }
 
-func ExtractSync[V any](r SyncResult) V {
-	return r.outcome.(V)
+func Cast[V any](o any) V {
+	return o.(V)
 }

@@ -22,11 +22,11 @@ type output interface {
 type TravelPlan die.AsyncResult
 
 func (p TravelPlan) GetTravelDistance() float64 {
-	result := die.ExtractAsync[dummy.TravelPlan](p.Task)
+	result := die.Outcome[dummy.TravelPlan](p.Task)
 	return result.Distance
 }
 
 func (p TravelPlan) GetTravelDuration() float64 {
-	result := die.ExtractAsync[dummy.TravelPlan](p.Task)
+	result := die.Outcome[dummy.TravelPlan](p.Task)
 	return result.Duration
 }

@@ -19,9 +19,8 @@ type computer struct{}
 func (c computer) Compute(ctx context.Context, p any) (any, error) {
 	casted := p.(plan)
 
-	vatAmount := c.addVATAmount(casted)
+	vatAmount := casted.GetTotalCost() * casted.GetVATPercent() / 100
+	casted.SetTotalCost(casted.GetTotalCost() + vatAmount)
 
-	return VATAmount{
-		vatAmount: vatAmount,
-	}, nil
+	return vatAmount, nil
 }

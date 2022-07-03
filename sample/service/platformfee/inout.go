@@ -16,4 +16,4 @@ type output interface {
 	SetTotalCost(float64)
 }
 
-type PlatformFee die.ComputerKey
+type PlatformFee die.SideEffectKey

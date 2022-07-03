@@ -14,11 +14,12 @@ var (
 	preHookType     = reflect.TypeOf((*pre)(nil)).Elem()
 	postHookType    = reflect.TypeOf((*post)(nil)).Elem()
 	asyncResultType = reflect.TypeOf(AsyncResult{})
+	syncResultType  = reflect.TypeOf(SyncResult{})
 )
 
 type parsedComponent struct {
 	id     string
-	setter reflect.Method
+	setter *reflect.Method
 }
 
 type analyzedPlan struct {
@@ -87,7 +88,7 @@ func (e Engine) AnalyzePlan(p plan) string {
 
 		// Hook types might be embedded in a parent plan struct. Hence, we need to check if the type
 		// is a hook but not a plan so that we don't register a plan as a hook.
-		typeAndPointerTypeIsNotPlanType := !fieldType.Implements(planType) && !reflect.New(fieldType).Type().Implements(planType)
+		typeAndPointerTypeIsNotPlanType := !fieldType.Implements(planType) && !fieldPointerType.Implements(planType)
 
 		// Hooks might be implemented with value or pointer receivers.
 		isPreHookType := fieldType.Implements(preHookType) || fieldPointerType.Implements(preHookType)
@@ -118,11 +119,36 @@ func (e Engine) AnalyzePlan(p plan) string {
 				if setter, ok := pType.MethodByName("Set" + extractShortName(componentID)); ok {
 					return parsedComponent{
 						id:     componentID,
-						setter: setter,
+						setter: &setter,
 					}
 				}
 
 				panic(fmt.Errorf("parallel plan must have setter for AsyncResult field: %s", extractShortName(componentID)))
+			}
+
+			if fieldType.ConvertibleTo(syncResultType) {
+				if !p.IsSequential() {
+					panic(fmt.Errorf("parallel plan cannot contain SyncResult field: %s", extractShortName(componentID)))
+				}
+
+				// fmt.Println("Type:", fieldType)
+
+				if setter, ok := pType.MethodByName("Set" + extractShortName(componentID)); ok {
+					// t := setter.Type
+					//
+					// for j := 0; j < t.NumIn(); j++ {
+					// 	v := t.In(j)
+					// 	fmt.Println("HERE 1", v)
+					// 	fmt.Println("HERE 2", v.Kind())
+					// }
+
+					return parsedComponent{
+						id:     componentID,
+						setter: &setter,
+					}
+				}
+
+				panic(fmt.Errorf("sequential plan must have setter for SyncResult field: %s", extractShortName(componentID)))
 			}
 
 			return parsedComponent{
@@ -147,14 +173,18 @@ func (e Engine) AnalyzePlan(p plan) string {
 }
 
 func (e Engine) ExecuteMasterPlan(ctx context.Context, planName string, p masterPlan) error {
-	if err := e.doExecute(ctx, planName, p, p.IsSequential()); err != nil {
+	// Plan implementations always use pointer receivers.
+	// Should be safe to extract value.
+	planValue := reflect.ValueOf(p).Elem()
+
+	if err := e.doExecute(ctx, planName, p, planValue, p.IsSequential()); err != nil {
 		return swallowErrPlanExecutionEndingEarly(err)
 	}
 
 	return nil
 }
 
-func (e Engine) doExecute(ctx context.Context, planName string, p masterPlan, isSequential bool) error {
+func (e Engine) doExecute(ctx context.Context, planName string, p masterPlan, curPlanValue reflect.Value, isSequential bool) error {
 	ap := e.findAnalyzedPlan(planName)
 
 	for _, h := range ap.preHooks {
@@ -165,10 +195,10 @@ func (e Engine) doExecute(ctx context.Context, planName string, p masterPlan, is
 
 	err := func() error {
 		if isSequential {
-			return e.doExecuteSync(ctx, p, ap.components)
+			return e.doExecuteSync(ctx, p, curPlanValue, ap.components)
 		}
 
-		return e.doExecuteAsync(ctx, p, ap.components)
+		return e.doExecuteAsync(ctx, p, curPlanValue, ap.components)
 	}()
 
 	if err != nil {
@@ -184,8 +214,8 @@ func (e Engine) doExecute(ctx context.Context, planName string, p masterPlan, is
 	return nil
 }
 
-func (e Engine) doExecuteSync(ctx context.Context, p masterPlan, components []parsedComponent) error {
-	for _, component := range components {
+func (e Engine) doExecuteSync(ctx context.Context, p masterPlan, curPlanValue reflect.Value, components []parsedComponent) error {
+	for idx, component := range components {
 		if c, ok := e.computers[component.id]; ok {
 			task := async.NewTask(
 				func(taskCtx context.Context) (any, error) {
@@ -193,8 +223,18 @@ func (e Engine) doExecuteSync(ctx context.Context, p masterPlan, components []pa
 				},
 			)
 
-			if err := task.ExecuteSync(ctx).Error(); err != nil {
+			result, err := task.RunSync(ctx).Outcome()
+			if err != nil {
 				return err
+			}
+
+			// Register SyncResult in a sequential plan's field
+			if component.setter != nil {
+				// Plan implementations always use pointer receivers.
+				// Need to extract pointer in order to call setters.
+				pointer := curPlanValue.Addr()
+
+				component.setter.Func.Call([]reflect.Value{pointer, reflect.ValueOf(newSyncResult(result))})
 			}
 
 			continue
@@ -202,7 +242,10 @@ func (e Engine) doExecuteSync(ctx context.Context, p masterPlan, components []pa
 
 		// Nested plan gets executed synchronously
 		if ap, ok := e.plans[component.id]; ok {
-			if err := e.doExecute(ctx, component.id, p, ap.isSequential); err != nil {
+			// Nested plan is always a value, never a pointer. Hence, no need to call Elem().
+			nestedPlanValue := curPlanValue.Field(idx)
+
+			if err := e.doExecute(ctx, component.id, p, nestedPlanValue, ap.isSequential); err != nil {
 				return err
 			}
 		}
@@ -211,9 +254,9 @@ func (e Engine) doExecuteSync(ctx context.Context, p masterPlan, components []pa
 	return nil
 }
 
-func (e Engine) doExecuteAsync(ctx context.Context, p masterPlan, components []parsedComponent) error {
+func (e Engine) doExecuteAsync(ctx context.Context, p masterPlan, curPlanValue reflect.Value, components []parsedComponent) error {
 	tasks := make([]async.SilentTask, 0, len(components))
-	for _, component := range components {
+	for idx, component := range components {
 		componentID := component.id
 
 		if c, ok := e.computers[componentID]; ok {
@@ -226,16 +269,25 @@ func (e Engine) doExecuteAsync(ctx context.Context, p masterPlan, components []p
 			tasks = append(tasks, task)
 
 			// Register AsyncResult in a parallel plan's field
-			component.setter.Func.Call([]reflect.Value{reflect.ValueOf(p), reflect.ValueOf(newAsyncResult(task))})
+			if component.setter != nil {
+				// Plan implementations always use pointer receivers.
+				// Need to extract pointer in order to call setters.
+				pointer := curPlanValue.Addr()
+
+				component.setter.Func.Call([]reflect.Value{pointer, reflect.ValueOf(newAsyncResult(task))})
+			}
 
 			continue
 		}
 
 		// Nested plan gets executed asynchronously by wrapping it inside a task
 		if ap, ok := e.plans[componentID]; ok {
+			// Nested plan is always a value, never a pointer. Hence, no need to call Elem().
+			nestedPlanValue := curPlanValue.Field(idx)
+
 			task := async.NewSilentTask(
 				func(taskCtx context.Context) error {
-					return e.doExecute(taskCtx, componentID, p, ap.isSequential)
+					return e.doExecute(taskCtx, componentID, p, nestedPlanValue, ap.isSequential)
 				},
 			)
 

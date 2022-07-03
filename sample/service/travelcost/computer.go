@@ -21,3 +21,7 @@ func (c computer) Compute(ctx context.Context, p any) (any, error) {
 
 	return c.calculateTravelCost(casted), nil
 }
+
+func (computer) calculateTravelCost(in input) float64 {
+	return in.GetBaseCost() + in.GetTravelDuration()*in.GetCostPerMinute() + in.GetTravelDistance()*in.GetCostPerKilometer()
+}

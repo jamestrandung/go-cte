@@ -24,6 +24,6 @@ type output interface {
 type TravelCost die.AsyncResult
 
 func (r TravelCost) GetTravelCost() float64 {
-	result := die.ExtractAsync[float64](r.Task)
+	result := die.Outcome[float64](r.Task)
 	return result
 }

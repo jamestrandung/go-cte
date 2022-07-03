@@ -151,9 +151,10 @@ func testEngine() {
 	)
 
 	if err := p.Execute(context.Background()); err != nil {
-		config.Print(err)
+		fmt.Println(err)
 	}
 
 	config.Print(p.GetTravelCost())
 	config.Print(p.GetTotalCost())
+	config.Print(p.GetVATAmount())
 }

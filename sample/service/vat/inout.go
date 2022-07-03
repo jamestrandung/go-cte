@@ -1,5 +1,9 @@
 package vat
 
+import (
+	"github.com/jamestrandung/go-die/die"
+)
+
 type plan interface {
 	input
 	output
@@ -12,9 +16,11 @@ type input interface {
 
 type output interface {
 	SetTotalCost(float64)
-	SetVATAmount(VATAmount)
+	SetVATAmount(die.SyncResult)
 }
 
-type VATAmount struct {
-	vatAmount float64
+type VATAmount die.SyncResult
+
+func (a VATAmount) GetVATAmount() float64 {
+	return a.Outcome.(float64)
 }

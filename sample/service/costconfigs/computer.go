@@ -37,3 +37,7 @@ func InitComputer(fetcher dummy.CostConfigsFetcher) {
 func (c computer) Compute(ctx context.Context, p any) (any, error) {
 	return c.doFetch(), nil
 }
+
+func (c computer) doFetch() dummy.MergedCostConfigs {
+	return c.fetcher.Fetch()
+}

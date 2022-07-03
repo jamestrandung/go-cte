@@ -56,5 +56,4 @@ func isValid(p plan) {
 		panic(ErrPlanMustUsePointerReceiver)
 	}
 
-
 }

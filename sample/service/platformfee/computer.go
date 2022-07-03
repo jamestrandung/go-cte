@@ -23,3 +23,7 @@ func (c computer) Compute(ctx context.Context, p any) error {
 
 	return nil
 }
+
+func (computer) addPlatformFee(p plan) {
+	p.SetTotalCost(p.GetTotalCost() + p.GetPlatformFee())
+}

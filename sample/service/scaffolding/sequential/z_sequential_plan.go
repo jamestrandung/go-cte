@@ -1,6 +1,7 @@
 package sequential
 
 import (
+	"github.com/jamestrandung/go-die/die"
 	"github.com/jamestrandung/go-die/sample/config"
 	"github.com/jamestrandung/go-die/sample/service/vat"
 )
@@ -20,6 +21,6 @@ func (p *SequentialPlan) SetTotalCost(totalCost float64) {
 	p.totalCost = totalCost
 }
 
-func (p *SequentialPlan) SetVATAmount(amount vat.VATAmount) {
-	p.VATAmount = amount
+func (p *SequentialPlan) SetVATAmount(r die.SyncResult) {
+	p.VATAmount = (vat.VATAmount)(r)
 }

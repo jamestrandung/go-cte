@@ -37,10 +37,18 @@ func InitComputer(mapService dummy.MapService) {
 func (c computer) Compute(ctx context.Context, p any) (any, error) {
 	casted := p.(plan)
 
-	travelPlan, err := c.buildTravelPlan(casted)
+	travelPlan, err := c.mapService.BuildTravelPlan(casted.GetPointA(), casted.GetPointB())
 	if err != nil {
 		return c.calculateStraightLineDistance(casted), nil
 	}
 
 	return travelPlan, nil
+}
+
+func (c computer) calculateStraightLineDistance(p plan) dummy.TravelPlan {
+	config.Printf("Building travel plan from %s to %s using straight-line distance\n", p.GetPointA(), p.GetPointB())
+	return dummy.TravelPlan{
+		Distance: 4,
+		Duration: 5,
+	}
 }
