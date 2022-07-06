@@ -50,11 +50,11 @@ func (c CostConfigs) GetVATPercent() float64 {
 }
 
 func (c CostConfigs) GetIsFixedCostEnabled() bool {
-	result := die.Outcome[dummy.MergedCostConfigs](c.Task)
+	result := die.Outcome[configsfetcher.MergedCostConfigs](c.Task)
 	return result.IsFixedCostEnabled
 }
 
 func (c CostConfigs) GetFixedCost() float64 {
-	result := die.Outcome[dummy.MergedCostConfigs](c.Task)
+	result := die.Outcome[configsfetcher.MergedCostConfigs](c.Task)
 	return result.FixedCost
 }
