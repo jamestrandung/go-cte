@@ -3,16 +3,16 @@ package platformfee
 import "github.com/jamestrandung/go-die/die"
 
 type plan interface {
-	input
-	output
+	Input
+	Output
 }
 
-type input interface {
+type Input interface {
 	GetPlatformFee() float64
 	GetTotalCost() float64
 }
 
-type output interface {
+type Output interface {
 	SetTotalCost(float64)
 }
 

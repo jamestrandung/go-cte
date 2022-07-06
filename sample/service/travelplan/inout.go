@@ -6,21 +6,21 @@ import (
 )
 
 type plan interface {
-	input
-	output
+	Input
+	Output
 }
 
 type Dependencies interface {
 	GetMapService() mapservice.Service
 }
 
-type input interface {
+type Input interface {
 	Dependencies
 	GetPointA() string
 	GetPointB() string
 }
 
-type output interface {
+type Output interface {
 	SetTravelPlan(die.AsyncResult)
 }
 

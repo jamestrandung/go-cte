@@ -6,19 +6,19 @@ import (
 )
 
 type plan interface {
-	input
-	output
+	Input
+	Output
 }
 
 type Dependencies interface {
 	GetConfigsFetcher() configsfetcher.Fetcher
 }
 
-type input interface {
+type Input interface {
 	Dependencies
 }
 
-type output interface {
+type Output interface {
 	SetCostConfigs(die.AsyncResult)
 }
 
