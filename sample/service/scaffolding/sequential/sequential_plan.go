@@ -1,8 +1,8 @@
 package sequential
 
 import (
-	"github.com/jamestrandung/go-die/sample/service/platformfee"
-	"github.com/jamestrandung/go-die/sample/service/vat"
+	"github.com/jamestrandung/go-die/sample/service/components/platformfee"
+	"github.com/jamestrandung/go-die/sample/service/components/vat"
 )
 
 type SequentialPlan struct {

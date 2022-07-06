@@ -1,8 +1,8 @@
 package parallel
 
 import (
-	"github.com/jamestrandung/go-die/sample/service/costconfigs"
-	"github.com/jamestrandung/go-die/sample/service/travelplan"
+	"github.com/jamestrandung/go-die/sample/service/components/costconfigs"
+	"github.com/jamestrandung/go-die/sample/service/components/travelplan"
 )
 
 type Dependencies interface {

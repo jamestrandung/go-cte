@@ -8,5 +8,5 @@ import (
 )
 
 func TestComputer_IsRegistered(t *testing.T) {
-	assert.True(t, config.Engine.IsRegistered(Amount{}))
+	assert.True(t, config.Engine.IsRegistered(VATAmount{}))
 }

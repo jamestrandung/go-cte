@@ -3,9 +3,9 @@ package parallel
 import (
 	"github.com/jamestrandung/go-die/die"
 	"github.com/jamestrandung/go-die/sample/config"
-	"github.com/jamestrandung/go-die/sample/service/costconfigs"
-	"github.com/jamestrandung/go-die/sample/service/travelcost"
-	"github.com/jamestrandung/go-die/sample/service/travelplan"
+	"github.com/jamestrandung/go-die/sample/service/components/costconfigs"
+	"github.com/jamestrandung/go-die/sample/service/components/travelcost"
+	"github.com/jamestrandung/go-die/sample/service/components/travelplan"
 )
 
 var planName string
