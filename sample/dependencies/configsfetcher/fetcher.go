@@ -1,11 +1,13 @@
 package configsfetcher
 
 type MergedCostConfigs struct {
-	BaseCost         float64
-	CostPerKilometer float64
-	CostPerMinute    float64
-	PlatformFee      float64
-	VATPercent       float64
+	BaseCost           float64
+	CostPerKilometer   float64
+	CostPerMinute      float64
+	PlatformFee        float64
+	VATPercent         float64
+	IsFixedCostEnabled bool
+	FixedCost          float64
 }
 
 type Fetcher struct{}
