@@ -1,29 +1,29 @@
 package platformfee
 
 import (
-	"context"
+    "context"
 
-	"github.com/jamestrandung/go-die/sample/config"
+    "github.com/jamestrandung/go-die/sample/config"
 )
 
 // Computers without any external dependencies can register itself directly
 // with the engine using init()
 func init() {
-	// config.Print("platformfee")
-	config.Engine.RegisterSideEffectComputer(PlatformFee{}, computer{})
-	// config.Print(config.Engine)
+    // config.Print("platformfee")
+    config.Engine.RegisterSideEffectComputer(PlatformFee{}, computer{})
+    // config.Print(config.Engine)
 }
 
 type computer struct{}
 
 func (c computer) Compute(ctx context.Context, p any) error {
-	casted := p.(plan)
+    casted := p.(plan)
 
-	c.addPlatformFee(casted)
+    c.addPlatformFee(casted)
 
-	return nil
+    return nil
 }
 
 func (computer) addPlatformFee(p plan) {
-	p.SetTotalCost(p.GetTotalCost() + p.GetPlatformFee())
+    p.SetTotalCost(p.GetTotalCost() + p.GetPlatformFee())
 }

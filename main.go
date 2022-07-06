@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/jamestrandung/go-die/sample/dto"
 	"go/ast"
 	"go/token"
 	"go/types"
 
 	"github.com/jamestrandung/go-die/sample/config"
 	"github.com/jamestrandung/go-die/sample/server"
-	"github.com/jamestrandung/go-die/sample/service/miscellaneous"
 	"github.com/jamestrandung/go-die/sample/service/scaffolding/parallel"
 	"github.com/jamestrandung/go-die/sample/service/scaffolding/sequential"
 	"golang.org/x/tools/go/packages"
@@ -144,10 +144,11 @@ func testEngine() {
 	config.Engine.ConnectPostHook(&sequential.SequentialPlan{}, customPostHook{})
 
 	p := parallel.NewPlan(
-		miscellaneous.CostRequest{
+		dto.CostRequest{
 			PointA: "Clementi",
 			PointB: "Changi Airport",
 		},
+		server.Dependencies,
 	)
 
 	if err := p.Execute(context.Background()); err != nil {

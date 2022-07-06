@@ -1,4 +1,4 @@
-package dummy
+package configsfetcher
 
 type MergedCostConfigs struct {
 	BaseCost         float64
@@ -8,9 +8,9 @@ type MergedCostConfigs struct {
 	VATPercent       float64
 }
 
-type CostConfigsFetcher struct{}
+type Fetcher struct{}
 
-func (CostConfigsFetcher) Fetch() MergedCostConfigs {
+func (Fetcher) Fetch() MergedCostConfigs {
 	return MergedCostConfigs{
 		BaseCost:         1,
 		CostPerKilometer: 4,

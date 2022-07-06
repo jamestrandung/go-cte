@@ -2,7 +2,7 @@ package travelplan
 
 import (
 	"github.com/jamestrandung/go-die/die"
-	"github.com/jamestrandung/go-die/sample/service/travelplan/dummy"
+	"github.com/jamestrandung/go-die/sample/dependencies/mapservice"
 )
 
 type plan interface {
@@ -10,7 +10,12 @@ type plan interface {
 	output
 }
 
+type Dependencies interface {
+	GetMapService() mapservice.Service
+}
+
 type input interface {
+	Dependencies
 	GetPointA() string
 	GetPointB() string
 }
@@ -22,11 +27,11 @@ type output interface {
 type TravelPlan die.AsyncResult
 
 func (p TravelPlan) GetTravelDistance() float64 {
-	result := die.Outcome[dummy.TravelPlan](p.Task)
+	result := die.Outcome[mapservice.Route](p.Task)
 	return result.Distance
 }
 
 func (p TravelPlan) GetTravelDuration() float64 {
-	result := die.Outcome[dummy.TravelPlan](p.Task)
+	result := die.Outcome[mapservice.Route](p.Task)
 	return result.Duration
 }

@@ -5,23 +5,24 @@ import (
 
 	"github.com/jamestrandung/go-die/sample/config"
 	"github.com/jamestrandung/go-die/sample/service/costconfigs"
-	"github.com/jamestrandung/go-die/sample/service/miscellaneous"
 	"github.com/jamestrandung/go-die/sample/service/scaffolding/sequential"
 	"github.com/jamestrandung/go-die/sample/service/travelcost"
 	"github.com/jamestrandung/go-die/sample/service/travelplan"
 )
 
 type ParallelPlan struct {
-	miscellaneous.CostRequest
+	Request
+	Dependencies
 	costconfigs.CostConfigs
 	travelplan.TravelPlan
 	travelcost.TravelCost
 	sequential.SequentialPlan
 }
 
-func NewPlan(r miscellaneous.CostRequest) *ParallelPlan {
+func NewPlan(r Request, d Dependencies) *ParallelPlan {
 	return &ParallelPlan{
-		CostRequest: r,
+		Request:      r,
+		Dependencies: d,
 	}
 }
 
