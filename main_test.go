@@ -1,14 +1,14 @@
 package main
 
 import (
-    "context"
-    "testing"
+	"context"
+	"github.com/jamestrandung/go-die/sample/dto"
+	"testing"
 
-    "github.com/jamestrandung/go-die/sample/config"
-    "github.com/jamestrandung/go-die/sample/server"
-    "github.com/jamestrandung/go-die/sample/service/miscellaneous"
-    "github.com/jamestrandung/go-die/sample/service/scaffolding/parallel"
-    "github.com/jamestrandung/go-die/sample/service/scaffolding/sequential"
+	"github.com/jamestrandung/go-die/sample/config"
+	"github.com/jamestrandung/go-die/sample/server"
+	"github.com/jamestrandung/go-die/sample/service/scaffolding/parallel"
+	"github.com/jamestrandung/go-die/sample/service/scaffolding/sequential"
 )
 
 func BenchmarkCustomPostHook_PostExecute(b *testing.B) {
@@ -17,10 +17,11 @@ func BenchmarkCustomPostHook_PostExecute(b *testing.B) {
     config.Engine.ConnectPostHook(&sequential.SequentialPlan{}, customPostHook{})
 
     p := parallel.NewPlan(
-        miscellaneous.CostRequest{
+        dto.CostRequest{
             PointA: "Clementi",
             PointB: "Changi Airport",
         },
+        server.Dependencies,
     )
 
     b.ResetTimer()

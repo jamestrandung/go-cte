@@ -24,7 +24,7 @@ func (c computer) Compute(ctx context.Context, p any) (any, error) {
 			return nil, err
 		}
 
-		return (result)(fixedCostPlan), nil
+		return fixedCostPlan, nil
 	}
 
 	sequentialPlan := sequential.NewPlan(casted)
@@ -32,5 +32,5 @@ func (c computer) Compute(ctx context.Context, p any) (any, error) {
 		return nil, err
 	}
 
-	return (result)(sequentialPlan), nil
+	return sequentialPlan, nil
 }
