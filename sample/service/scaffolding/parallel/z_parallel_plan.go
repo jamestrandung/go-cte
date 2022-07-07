@@ -4,6 +4,7 @@ import (
 	"github.com/jamestrandung/go-die/die"
 	"github.com/jamestrandung/go-die/sample/config"
 	"github.com/jamestrandung/go-die/sample/service/components/costconfigs"
+	"github.com/jamestrandung/go-die/sample/service/components/fixedcostbranch"
 	"github.com/jamestrandung/go-die/sample/service/components/travelcost"
 	"github.com/jamestrandung/go-die/sample/service/components/travelplan"
 )
@@ -25,4 +26,8 @@ func (p *ParallelPlan) SetTravelPlan(r die.Result) {
 
 func (p *ParallelPlan) SetTravelCost(r die.Result) {
 	p.TravelCost = (travelcost.TravelCost)(r)
+}
+
+func (p *ParallelPlan) SetCalculatedCost(r die.AsyncResult) {
+	p.CalculatedCost = (fixedcostbranch.CalculatedCost)(r)
 }

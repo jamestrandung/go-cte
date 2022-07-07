@@ -1,6 +1,6 @@
 package fixedcost
 
-import "github.com/jamestrandung/go-die/sample/service/vat"
+import "github.com/jamestrandung/go-die/sample/service/components/vat"
 
 type Input interface {
 	vat.Input

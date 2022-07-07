@@ -7,8 +7,6 @@ import (
 	"github.com/jamestrandung/go-die/sample/config"
 )
 
-// Computers with external dependencies still has to register itself with the
-// engine using init() so that we can perform validations on plans
 func init() {
 	// config.Print("travelplan")
 	config.Engine.RegisterImpureComputer(TravelPlan{}, computer{})

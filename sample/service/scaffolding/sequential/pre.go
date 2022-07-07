@@ -3,7 +3,15 @@ package sequential
 import "github.com/jamestrandung/go-die/sample/config"
 
 type pre interface {
+	preIn
+	preOut
+}
+
+type preIn interface {
 	GetTravelCost() float64
+}
+
+type preOut interface {
 	SetTotalCost(float64)
 }
 

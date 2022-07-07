@@ -6,8 +6,6 @@ import (
 	"github.com/jamestrandung/go-die/sample/config"
 )
 
-// Computers without any external dependencies can register itself directly
-// with the engine using init()
 func init() {
 	// config.Print("vat")
 	config.Engine.RegisterImpureComputer(VATAmount{}, computer{})

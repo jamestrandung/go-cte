@@ -14,10 +14,12 @@ type Fetcher struct{}
 
 func (Fetcher) Fetch() MergedCostConfigs {
 	return MergedCostConfigs{
-		BaseCost:         1,
-		CostPerKilometer: 4,
-		CostPerMinute:    5,
-		PlatformFee:      8,
-		VATPercent:       10,
+		BaseCost:           1,
+		CostPerKilometer:   4,
+		CostPerMinute:      5,
+		PlatformFee:        8,
+		VATPercent:         10,
+		IsFixedCostEnabled: false,
+		FixedCost:          10,
 	}
 }
