@@ -19,10 +19,10 @@ type Input interface {
 }
 
 type Output interface {
-	SetCostConfigs(die.AsyncResult)
+	SetCostConfigs(die.Result)
 }
 
-type CostConfigs die.AsyncResult
+type CostConfigs die.Result
 
 func (c CostConfigs) GetBaseCost() float64 {
 	result := die.Outcome[configsfetcher.MergedCostConfigs](c.Task)

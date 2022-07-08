@@ -10,11 +10,11 @@ import (
 )
 
 var (
-	planType        = reflect.TypeOf((*plan)(nil)).Elem()
-	preHookType     = reflect.TypeOf((*pre)(nil)).Elem()
-	postHookType    = reflect.TypeOf((*post)(nil)).Elem()
-	asyncResultType = reflect.TypeOf(AsyncResult{})
-	syncResultType  = reflect.TypeOf(SyncResult{})
+	planType       = reflect.TypeOf((*plan)(nil)).Elem()
+	preHookType    = reflect.TypeOf((*pre)(nil)).Elem()
+	postHookType   = reflect.TypeOf((*post)(nil)).Elem()
+	resultType     = reflect.TypeOf(Result{})
+	syncResultType = reflect.TypeOf(SyncResult{})
 )
 
 type parsedComponent struct {
@@ -111,11 +111,8 @@ func (e Engine) AnalyzePlan(p plan) string {
 		componentID := extractFullNameFromType(fieldType)
 
 		component := func() parsedComponent {
-			if fieldType.ConvertibleTo(asyncResultType) {
-				if p.IsSequential() {
-					panic(fmt.Errorf("sequential plan cannot contain AsyncResult field: %s", extractShortName(componentID)))
-				}
-
+			if fieldType.ConvertibleTo(resultType) {
+				// Both sequential & parallel plans can contain Result fields
 				if setter, ok := pType.MethodByName("Set" + extractShortName(componentID)); ok {
 					return parsedComponent{
 						id:     componentID,
@@ -123,7 +120,7 @@ func (e Engine) AnalyzePlan(p plan) string {
 					}
 				}
 
-				panic(fmt.Errorf("parallel plan must have setter for AsyncResult field: %s", extractShortName(componentID)))
+				panic(fmt.Errorf("plan must have setter for Result field: %s", extractShortName(componentID)))
 			}
 
 			if fieldType.ConvertibleTo(syncResultType) {
@@ -131,17 +128,7 @@ func (e Engine) AnalyzePlan(p plan) string {
 					panic(fmt.Errorf("parallel plan cannot contain SyncResult field: %s", extractShortName(componentID)))
 				}
 
-				// fmt.Println("Type:", fieldType)
-
 				if setter, ok := pType.MethodByName("Set" + extractShortName(componentID)); ok {
-					// t := setter.Type
-					//
-					// for j := 0; j < t.NumIn(); j++ {
-					// 	v := t.In(j)
-					// 	fmt.Println("HERE 1", v)
-					// 	fmt.Println("HERE 2", v.Kind())
-					// }
-
 					return parsedComponent{
 						id:     componentID,
 						setter: &setter,
@@ -268,7 +255,7 @@ func (e Engine) doExecuteAsync(ctx context.Context, p masterPlan, curPlanValue r
 
 			tasks = append(tasks, task)
 
-			// Register AsyncResult in a parallel plan's field
+			// Register Result in a parallel plan's field
 			if component.setter != nil {
 				// Plan implementations always use pointer receivers.
 				// Need to extract pointer in order to call setters.

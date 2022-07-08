@@ -21,10 +21,10 @@ type Input interface {
 }
 
 type Output interface {
-	SetTravelPlan(die.AsyncResult)
+	SetTravelPlan(die.Result)
 }
 
-type TravelPlan die.AsyncResult
+type TravelPlan die.Result
 
 func (p TravelPlan) GetTravelDistance() float64 {
 	result := die.Outcome[mapservice.Route](p.Task)

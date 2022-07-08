@@ -18,10 +18,10 @@ type input interface {
 }
 
 type output interface {
-	SetTravelCost(die.AsyncResult)
+	SetTravelCost(die.Result)
 }
 
-type TravelCost die.AsyncResult
+type TravelCost die.Result
 
 func (r TravelCost) GetTravelCost() float64 {
 	result := die.Outcome[float64](r.Task)

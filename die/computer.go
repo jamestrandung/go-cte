@@ -24,12 +24,12 @@ func (bc bridgeComputer) Compute(ctx context.Context, p any) (any, error) {
 
 type SideEffectKey struct{}
 
-type AsyncResult struct {
+type Result struct {
 	Task async.Task[any]
 }
 
-func newAsyncResult(t async.Task[any]) AsyncResult {
-	return AsyncResult{
+func newAsyncResult(t async.Task[any]) Result {
+	return Result{
 		Task: t,
 	}
 }

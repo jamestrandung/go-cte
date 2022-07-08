@@ -15,14 +15,14 @@ func init() {
 	planName = config.Engine.AnalyzePlan(&ParallelPlan{})
 }
 
-func (p *ParallelPlan) SetCostConfigs(r die.AsyncResult) {
+func (p *ParallelPlan) SetCostConfigs(r die.Result) {
 	p.CostConfigs = (costconfigs.CostConfigs)(r)
 }
 
-func (p *ParallelPlan) SetTravelPlan(r die.AsyncResult) {
+func (p *ParallelPlan) SetTravelPlan(r die.Result) {
 	p.TravelPlan = (travelplan.TravelPlan)(r)
 }
 
-func (p *ParallelPlan) SetTravelCost(r die.AsyncResult) {
+func (p *ParallelPlan) SetTravelCost(r die.Result) {
 	p.TravelCost = (travelcost.TravelCost)(r)
 }
