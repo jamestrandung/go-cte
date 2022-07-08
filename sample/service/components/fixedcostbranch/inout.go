@@ -23,10 +23,10 @@ type result interface {
 }
 
 type Output interface {
-	SetCalculatedCost(die.AsyncResult)
+	SetCalculatedCost(die.Result)
 }
 
-type CalculatedCost die.AsyncResult
+type CalculatedCost die.Result
 
 func (c CalculatedCost) GetTotalCost() float64 {
 	return die.Outcome[result](c.Task).GetTotalCost()

@@ -28,6 +28,6 @@ func (p *ParallelPlan) SetTravelCost(r die.Result) {
 	p.TravelCost = (travelcost.TravelCost)(r)
 }
 
-func (p *ParallelPlan) SetCalculatedCost(r die.AsyncResult) {
+func (p *ParallelPlan) SetCalculatedCost(r die.Result) {
 	p.CalculatedCost = (fixedcostbranch.CalculatedCost)(r)
 }
