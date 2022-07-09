@@ -28,7 +28,7 @@ func NewPlan(r Request, d Dependencies) *ParallelPlan {
 }
 
 func (p *ParallelPlan) IsSequential() bool {
-	return true
+	return false
 }
 
 func (p *ParallelPlan) Execute(ctx context.Context) error {
