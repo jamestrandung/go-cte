@@ -1,9 +1,10 @@
 package fixedcost
 
 import (
-	"context"
-	"github.com/jamestrandung/go-die/sample/config"
-	"github.com/jamestrandung/go-die/sample/service/components/vat"
+    "context"
+
+    "github.com/jamestrandung/go-die/sample/config"
+    "github.com/jamestrandung/go-die/sample/service/components/vat"
 )
 
 type FixedCostPlan struct {

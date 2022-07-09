@@ -10,54 +10,57 @@ import (
 )
 
 var (
-	planType       = reflect.TypeOf((*plan)(nil)).Elem()
-	preHookType    = reflect.TypeOf((*pre)(nil)).Elem()
-	postHookType   = reflect.TypeOf((*post)(nil)).Elem()
+	planType       = reflect.TypeOf((*Plan)(nil)).Elem()
+	preHookType    = reflect.TypeOf((*Pre)(nil)).Elem()
+	postHookType   = reflect.TypeOf((*Post)(nil)).Elem()
 	resultType     = reflect.TypeOf(Result{})
 	syncResultType = reflect.TypeOf(SyncResult{})
 )
 
 type parsedComponent struct {
-	id     string
-	setter *reflect.Method
+	id           string
+	fieldIdx     int
+	fieldType    reflect.Type
+	isSyncResult bool
+	requireSet   bool
 }
 
 type analyzedPlan struct {
 	isSequential bool
 	components   []parsedComponent
-	preHooks     []pre
-	postHooks    []post
+	preHooks     []Pre
+	postHooks    []Post
 }
 
 type Engine struct {
-	computers map[string]impureComputer
+	computers map[string]ImpureComputer
 	plans     map[string]analyzedPlan
 }
 
 func NewEngine() Engine {
 	return Engine{
-		computers: make(map[string]impureComputer),
+		computers: make(map[string]ImpureComputer),
 		plans:     make(map[string]analyzedPlan),
 	}
 }
 
-func (e Engine) RegisterImpureComputer(v any, c impureComputer) {
+func (e Engine) RegisterImpureComputer(v any, c ImpureComputer) {
 	e.computers[extractFullNameFromValue(v)] = c
 }
 
-func (e Engine) RegisterSideEffectComputer(v any, c sideEffectComputer) {
+func (e Engine) RegisterSideEffectComputer(v any, c SideEffectComputer) {
 	e.computers[extractFullNameFromValue(v)] = bridgeComputer{
 		se: c,
 	}
 }
 
-func (e Engine) RegisterSwitchComputer(v any, c switchComputer) {
+func (e Engine) RegisterSwitchComputer(v any, c SwitchComputer) {
 	e.computers[extractFullNameFromValue(v)] = bridgeComputer{
 		sw: c,
 	}
 }
 
-func (e Engine) ConnectPreHook(p plan, hooks ...pre) {
+func (e Engine) ConnectPreHook(p Plan, hooks ...Pre) {
 	planName := extractFullNameFromValue(p)
 
 	toUpdate := e.findExistingPlanOrCreate(planName)
@@ -66,7 +69,7 @@ func (e Engine) ConnectPreHook(p plan, hooks ...pre) {
 	e.plans[planName] = toUpdate
 }
 
-func (e Engine) ConnectPostHook(p plan, hooks ...post) {
+func (e Engine) ConnectPostHook(p Plan, hooks ...Post) {
 	planName := extractFullNameFromValue(p)
 
 	toUpdate := e.findExistingPlanOrCreate(planName)
@@ -75,17 +78,16 @@ func (e Engine) ConnectPostHook(p plan, hooks ...post) {
 	e.plans[planName] = toUpdate
 }
 
-func (e Engine) AnalyzePlan(p plan) string {
+func (e Engine) AnalyzePlan(p Plan) string {
 	val := reflect.ValueOf(p)
 	if val.Kind() != reflect.Pointer {
 		panic(ErrPlanMustUsePointerReceiver)
 	}
 
 	val = val.Elem()
-	pType := reflect.ValueOf(p).Type()
 
-	var preHooks []pre
-	var postHooks []post
+	var preHooks []Pre
+	var postHooks []Post
 
 	components := make([]parsedComponent, val.NumField())
 	for i := 0; i < val.NumField(); i++ {
@@ -101,14 +103,14 @@ func (e Engine) AnalyzePlan(p plan) string {
 		isPostHookType := fieldType.Implements(postHookType) || fieldPointerType.Implements(postHookType)
 
 		if typeAndPointerTypeIsNotPlanType && isPreHookType {
-			preHook := reflect.New(fieldType).Interface().(pre)
+			preHook := reflect.New(fieldType).Interface().(Pre)
 			preHooks = append(preHooks, preHook)
 
 			continue
 		}
 
 		if typeAndPointerTypeIsNotPlanType && isPostHookType {
-			postHook := reflect.New(fieldType).Interface().(post)
+			postHook := reflect.New(fieldType).Interface().(Post)
 			postHooks = append(postHooks, postHook)
 
 			continue
@@ -119,14 +121,12 @@ func (e Engine) AnalyzePlan(p plan) string {
 		component := func() parsedComponent {
 			if fieldType.ConvertibleTo(resultType) {
 				// Both sequential & parallel plans can contain Result fields
-				if setter, ok := pType.MethodByName("Set" + extractShortName(componentID)); ok {
-					return parsedComponent{
-						id:     componentID,
-						setter: &setter,
-					}
+				return parsedComponent{
+					id:         componentID,
+					fieldIdx:   i,
+					fieldType:  fieldType,
+					requireSet: true,
 				}
-
-				panic(fmt.Errorf("plan must have setter for Result field: %s", extractShortName(componentID)))
 			}
 
 			if fieldType.ConvertibleTo(syncResultType) {
@@ -134,14 +134,13 @@ func (e Engine) AnalyzePlan(p plan) string {
 					panic(fmt.Errorf("parallel plan cannot contain SyncResult field: %s", extractShortName(componentID)))
 				}
 
-				if setter, ok := pType.MethodByName("Set" + extractShortName(componentID)); ok {
-					return parsedComponent{
-						id:     componentID,
-						setter: &setter,
-					}
+				return parsedComponent{
+					id:           componentID,
+					fieldIdx:     i,
+					fieldType:    fieldType,
+					isSyncResult: true,
+					requireSet:   true,
 				}
-
-				panic(fmt.Errorf("sequential plan must have setter for SyncResult field: %s", extractShortName(componentID)))
 			}
 
 			return parsedComponent{
@@ -213,8 +212,8 @@ func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue re
 			task := async.NewTask(
 				func(taskCtx context.Context) (any, error) {
 					result, err := c.Compute(taskCtx, p)
-					if mp, ok := result.(MasterPlan); err == nil && ok {
-						return mp, mp.Execute(taskCtx)
+					if tep, ok := result.(toExecutePlan); err == nil && ok {
+						return tep.mp, tep.mp.Execute(taskCtx)
 					}
 
 					return result, err
@@ -226,13 +225,18 @@ func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue re
 				return err
 			}
 
-			// Register SyncResult in a sequential plan's field
-			if component.setter != nil {
-				// Plan implementations always use pointer receivers.
-				// Need to extract pointer in order to call setters.
-				pointer := curPlanValue.Addr()
+			// Register Result/SyncResult in a sequential plan's field
+			if component.requireSet {
+				field := curPlanValue.Field(component.fieldIdx)
+				casted := func() reflect.Value {
+					if component.isSyncResult {
+						return reflect.ValueOf(newSyncResult(result)).Convert(component.fieldType)
+					}
 
-				component.setter.Func.Call([]reflect.Value{pointer, reflect.ValueOf(newSyncResult(result))})
+					return reflect.ValueOf(newResult(task)).Convert(component.fieldType)
+				}()
+
+				field.Set(casted)
 			}
 
 			continue
@@ -243,7 +247,8 @@ func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue re
 			// Nested plan is always a value, never a pointer. Hence, no need to call Elem().
 			nestedPlanValue := curPlanValue.Field(idx)
 
-			if err := e.doExecute(ctx, component.id, p, nestedPlanValue, ap.isSequential); err != nil {
+			err := e.doExecute(ctx, component.id, p, nestedPlanValue, ap.isSequential)
+			if err != nil && err != ErrPlanExecutionEndingEarly {
 				return err
 			}
 		}
@@ -261,8 +266,8 @@ func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue r
 			task := async.NewTask(
 				func(taskCtx context.Context) (any, error) {
 					result, err := c.Compute(taskCtx, p)
-					if mp, ok := result.(MasterPlan); err == nil && ok {
-						return mp, mp.Execute(taskCtx)
+					if tep, ok := result.(toExecutePlan); err == nil && ok {
+						return tep.mp, tep.mp.Execute(taskCtx)
 					}
 
 					return result, err
@@ -272,12 +277,11 @@ func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue r
 			tasks = append(tasks, task)
 
 			// Register Result in a parallel plan's field
-			if component.setter != nil {
-				// Plan implementations always use pointer receivers.
-				// Need to extract pointer in order to call setters.
-				pointer := curPlanValue.Addr()
+			if component.requireSet {
+				field := curPlanValue.Field(component.fieldIdx)
+				casted := reflect.ValueOf(newResult(task)).Convert(component.fieldType)
 
-				component.setter.Func.Call([]reflect.Value{pointer, reflect.ValueOf(newAsyncResult(task))})
+				field.Set(casted)
 			}
 
 			continue
@@ -290,7 +294,12 @@ func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue r
 
 			task := async.NewSilentTask(
 				func(taskCtx context.Context) error {
-					return e.doExecute(taskCtx, componentID, p, nestedPlanValue, ap.isSequential)
+					err := e.doExecute(taskCtx, component.id, p, nestedPlanValue, ap.isSequential)
+					if err != nil && err != ErrPlanExecutionEndingEarly {
+						return err
+					}
+
+					return nil
 				},
 			)
 

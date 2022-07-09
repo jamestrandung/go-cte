@@ -4,19 +4,19 @@ import (
 	"context"
 )
 
-type plan interface {
+type Plan interface {
 	IsSequential() bool
 }
 
 type MasterPlan interface {
-	plan
+	Plan
 	Execute(ctx context.Context) error
 }
 
-type pre interface {
+type Pre interface {
 	PreExecute(p any) error
 }
 
-type post interface {
+type Post interface {
 	PostExecute(p any) error
 }

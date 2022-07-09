@@ -8,7 +8,6 @@ import (
 
 type plan interface {
 	Input
-	Output
 }
 
 type Input interface {
@@ -20,10 +19,6 @@ type Input interface {
 type result interface {
 	GetTotalCost() float64
 	GetVATAmount() float64
-}
-
-type Output interface {
-	SetCalculatedCost(die.Result)
 }
 
 type CalculatedCost die.Result

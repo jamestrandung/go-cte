@@ -1,13 +1,14 @@
 package parallel
 
 import (
-	"context"
-	"github.com/jamestrandung/go-die/sample/service/components/quote"
+    "context"
 
-	"github.com/jamestrandung/go-die/sample/config"
-	"github.com/jamestrandung/go-die/sample/service/components/costconfigs"
-	"github.com/jamestrandung/go-die/sample/service/components/travelcost"
-	"github.com/jamestrandung/go-die/sample/service/components/travelplan"
+    "github.com/jamestrandung/go-die/sample/service/components/quote"
+
+    "github.com/jamestrandung/go-die/sample/config"
+    "github.com/jamestrandung/go-die/sample/service/components/costconfigs"
+    "github.com/jamestrandung/go-die/sample/service/components/travelcost"
+    "github.com/jamestrandung/go-die/sample/service/components/travelplan"
 )
 
 type ParallelPlan struct {
@@ -27,7 +28,7 @@ func NewPlan(r Request, d Dependencies) *ParallelPlan {
 }
 
 func (p *ParallelPlan) IsSequential() bool {
-	return false
+	return true
 }
 
 func (p *ParallelPlan) Execute(ctx context.Context) error {

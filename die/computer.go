@@ -6,21 +6,25 @@ import (
 	"github.com/jamestrandung/go-concurrency/async"
 )
 
-type impureComputer interface {
+type ImpureComputer interface {
 	Compute(ctx context.Context, p any) (any, error)
 }
 
-type sideEffectComputer interface {
+type SideEffectComputer interface {
 	Compute(ctx context.Context, p any) error
 }
 
-type switchComputer interface {
+type SwitchComputer interface {
 	Switch(ctx context.Context, p any) (MasterPlan, error)
 }
 
+type toExecutePlan struct {
+	mp MasterPlan
+}
+
 type bridgeComputer struct {
-	se sideEffectComputer
-	sw switchComputer
+	se SideEffectComputer
+	sw SwitchComputer
 }
 
 func (bc bridgeComputer) Compute(ctx context.Context, p any) (any, error) {
@@ -28,7 +32,11 @@ func (bc bridgeComputer) Compute(ctx context.Context, p any) (any, error) {
 		return struct{}{}, bc.se.Compute(ctx, p)
 	}
 
-	return bc.sw.Switch(ctx, p)
+	mp, err := bc.sw.Switch(ctx, p)
+
+	return toExecutePlan{
+		mp: mp,
+	}, err
 }
 
 type SideEffectKey struct{}
@@ -37,7 +45,7 @@ type Result struct {
 	Task async.Task[any]
 }
 
-func newAsyncResult(t async.Task[any]) Result {
+func newResult(t async.Task[any]) Result {
 	return Result{
 		Task: t,
 	}

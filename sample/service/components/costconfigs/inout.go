@@ -7,7 +7,6 @@ import (
 
 type plan interface {
 	Input
-	Output
 }
 
 type Dependencies interface {
@@ -16,10 +15,6 @@ type Dependencies interface {
 
 type Input interface {
 	Dependencies
-}
-
-type Output interface {
-	SetCostConfigs(die.Result)
 }
 
 type CostConfigs die.Result

@@ -7,7 +7,6 @@ import (
 
 type plan interface {
 	Input
-	Output
 }
 
 type Dependencies interface {
@@ -18,10 +17,6 @@ type Input interface {
 	Dependencies
 	GetPointA() string
 	GetPointB() string
-}
-
-type Output interface {
-	SetTravelPlan(die.Result)
 }
 
 type TravelPlan die.Result

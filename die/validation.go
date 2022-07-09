@@ -7,7 +7,7 @@ import (
 	"runtime/debug"
 )
 
-func (e Engine) IsAnalyzed(p plan) bool {
+func (e Engine) IsAnalyzed(p Plan) bool {
 	_, ok := e.plans[extractFullNameFromValue(p)]
 	return ok
 }
@@ -33,7 +33,7 @@ func (e Engine) IsExecutable(p MasterPlan) (err error) {
 					}
 				}()
 
-				// If plan is not executable, 1 of the impureComputer will panic
+				// If plan is not executable, one of the computers will panic
 				if c, ok := e.computers[component.id]; ok {
 					c.Compute(context.Background(), p)
 				}
@@ -50,7 +50,7 @@ func (e Engine) IsExecutable(p MasterPlan) (err error) {
 	return
 }
 
-func isValid(p plan) {
+func isValid(p Plan) {
 	val := reflect.ValueOf(p)
 	if val.Kind() != reflect.Pointer {
 		panic(ErrPlanMustUsePointerReceiver)

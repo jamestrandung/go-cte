@@ -16,7 +16,6 @@ type Input interface {
 
 type Output interface {
 	SetTotalCost(float64)
-	SetVATAmount(die.SyncResult)
 }
 
 type VATAmount die.SyncResult

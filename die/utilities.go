@@ -7,7 +7,7 @@ import (
 
 func swallowErrPlanExecutionEndingEarly(err error) error {
 	// Execution was intentionally ended by clients
-	if err == ErrPlanExecutionEndingEarly {
+	if err == ErrPlanExecutionEndingEarly || err == ErrRootPlanExecutionEndingEarly {
 		return nil
 	}
 

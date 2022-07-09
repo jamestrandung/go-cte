@@ -2,6 +2,7 @@ package costconfigs
 
 import (
 	"context"
+
 	"github.com/jamestrandung/go-die/sample/dependencies/configsfetcher"
 
 	"github.com/jamestrandung/go-die/sample/config"

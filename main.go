@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/jamestrandung/go-die/sample/dto"
 	"go/ast"
 	"go/token"
 	"go/types"
+
+	"github.com/jamestrandung/go-die/sample/dto"
 
 	"github.com/jamestrandung/go-die/sample/config"
 	"github.com/jamestrandung/go-die/sample/server"

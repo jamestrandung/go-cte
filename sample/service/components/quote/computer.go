@@ -2,6 +2,7 @@ package quote
 
 import (
 	"context"
+
 	"github.com/jamestrandung/go-die/die"
 	"github.com/jamestrandung/go-die/sample/config"
 	"github.com/jamestrandung/go-die/sample/service/scaffolding/fixedcost"

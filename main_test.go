@@ -1,34 +1,35 @@
 package main
 
 import (
-	"context"
-	"github.com/jamestrandung/go-die/sample/dto"
-	"testing"
+    "context"
+    "testing"
 
-	"github.com/jamestrandung/go-die/sample/config"
-	"github.com/jamestrandung/go-die/sample/server"
-	"github.com/jamestrandung/go-die/sample/service/scaffolding/parallel"
-	"github.com/jamestrandung/go-die/sample/service/scaffolding/sequential"
+    "github.com/jamestrandung/go-die/sample/dto"
+
+    "github.com/jamestrandung/go-die/sample/config"
+    "github.com/jamestrandung/go-die/sample/server"
+    "github.com/jamestrandung/go-die/sample/service/scaffolding/parallel"
+    "github.com/jamestrandung/go-die/sample/service/scaffolding/sequential"
 )
 
 func BenchmarkCustomPostHook_PostExecute(b *testing.B) {
-    server.Serve()
+	server.Serve()
 
-    config.Engine.ConnectPostHook(&sequential.SequentialPlan{}, customPostHook{})
+	config.Engine.ConnectPostHook(&sequential.SequentialPlan{}, customPostHook{})
 
-    p := parallel.NewPlan(
-        dto.CostRequest{
-            PointA: "Clementi",
-            PointB: "Changi Airport",
-        },
-        server.Dependencies,
-    )
+	p := parallel.NewPlan(
+		dto.CostRequest{
+			PointA: "Clementi",
+			PointB: "Changi Airport",
+		},
+		server.Dependencies,
+	)
 
-    b.ResetTimer()
+	b.ResetTimer()
 
-    for i := 0; i < b.N; i++ {
-        if err := p.Execute(context.Background()); err != nil {
-            config.Print(err)
-        }
-    }
+	for i := 0; i < b.N; i++ {
+		if err := p.Execute(context.Background()); err != nil {
+			config.Print(err)
+		}
+	}
 }
