@@ -2,7 +2,7 @@ package parallel
 
 import (
 	"context"
-	"github.com/jamestrandung/go-die/sample/service/components/fixedcostbranch"
+	"github.com/jamestrandung/go-die/sample/service/components/quote"
 
 	"github.com/jamestrandung/go-die/sample/config"
 	"github.com/jamestrandung/go-die/sample/service/components/costconfigs"
@@ -16,7 +16,7 @@ type ParallelPlan struct {
 	costconfigs.CostConfigs
 	travelplan.TravelPlan
 	travelcost.TravelCost
-	fixedcostbranch.CalculatedCost
+	quote.CalculatedCost
 }
 
 func NewPlan(r Request, d Dependencies) *ParallelPlan {

@@ -45,9 +45,15 @@ func (e Engine) RegisterImpureComputer(v any, c impureComputer) {
 	e.computers[extractFullNameFromValue(v)] = c
 }
 
-func (e Engine) RegisterSideEffectComputer(v any, sc sideEffectComputer) {
+func (e Engine) RegisterSideEffectComputer(v any, c sideEffectComputer) {
 	e.computers[extractFullNameFromValue(v)] = bridgeComputer{
-		sc: sc,
+		se: c,
+	}
+}
+
+func (e Engine) RegisterSwitchComputer(v any, c switchComputer) {
+	e.computers[extractFullNameFromValue(v)] = bridgeComputer{
+		sw: c,
 	}
 }
 
@@ -159,7 +165,7 @@ func (e Engine) AnalyzePlan(p plan) string {
 	return planName
 }
 
-func (e Engine) ExecuteMasterPlan(ctx context.Context, planName string, p masterPlan) error {
+func (e Engine) ExecuteMasterPlan(ctx context.Context, planName string, p MasterPlan) error {
 	// Plan implementations always use pointer receivers.
 	// Should be safe to extract value.
 	planValue := reflect.ValueOf(p).Elem()
@@ -171,7 +177,7 @@ func (e Engine) ExecuteMasterPlan(ctx context.Context, planName string, p master
 	return nil
 }
 
-func (e Engine) doExecute(ctx context.Context, planName string, p masterPlan, curPlanValue reflect.Value, isSequential bool) error {
+func (e Engine) doExecute(ctx context.Context, planName string, p MasterPlan, curPlanValue reflect.Value, isSequential bool) error {
 	ap := e.findAnalyzedPlan(planName)
 
 	for _, h := range ap.preHooks {
@@ -201,12 +207,17 @@ func (e Engine) doExecute(ctx context.Context, planName string, p masterPlan, cu
 	return nil
 }
 
-func (e Engine) doExecuteSync(ctx context.Context, p masterPlan, curPlanValue reflect.Value, components []parsedComponent) error {
+func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue reflect.Value, components []parsedComponent) error {
 	for idx, component := range components {
 		if c, ok := e.computers[component.id]; ok {
 			task := async.NewTask(
 				func(taskCtx context.Context) (any, error) {
-					return c.Compute(taskCtx, p)
+					result, err := c.Compute(taskCtx, p)
+					if mp, ok := result.(MasterPlan); err == nil && ok {
+						return mp, mp.Execute(taskCtx)
+					}
+
+					return result, err
 				},
 			)
 
@@ -241,7 +252,7 @@ func (e Engine) doExecuteSync(ctx context.Context, p masterPlan, curPlanValue re
 	return nil
 }
 
-func (e Engine) doExecuteAsync(ctx context.Context, p masterPlan, curPlanValue reflect.Value, components []parsedComponent) error {
+func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue reflect.Value, components []parsedComponent) error {
 	tasks := make([]async.SilentTask, 0, len(components))
 	for idx, component := range components {
 		componentID := component.id
@@ -249,7 +260,12 @@ func (e Engine) doExecuteAsync(ctx context.Context, p masterPlan, curPlanValue r
 		if c, ok := e.computers[componentID]; ok {
 			task := async.NewTask(
 				func(taskCtx context.Context) (any, error) {
-					return c.Compute(taskCtx, p)
+					result, err := c.Compute(taskCtx, p)
+					if mp, ok := result.(MasterPlan); err == nil && ok {
+						return mp, mp.Execute(taskCtx)
+					}
+
+					return result, err
 				},
 			)
 

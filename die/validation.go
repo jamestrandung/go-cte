@@ -19,7 +19,7 @@ func (e Engine) IsRegistered(v any) bool {
 	return ok
 }
 
-func (e Engine) IsExecutable(p masterPlan) (err error) {
+func (e Engine) IsExecutable(p MasterPlan) (err error) {
 	var verifyFn func(planName string)
 	verifyFn = func(planName string) {
 		ap := e.findAnalyzedPlan(planName)

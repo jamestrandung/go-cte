@@ -22,5 +22,5 @@ type Output interface {
 type VATAmount die.SyncResult
 
 func (a VATAmount) GetVATAmount() float64 {
-	return a.Outcome.(float64)
+	return die.Cast[float64](a.Outcome)
 }

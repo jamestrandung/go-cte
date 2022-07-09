@@ -14,12 +14,21 @@ type sideEffectComputer interface {
 	Compute(ctx context.Context, p any) error
 }
 
+type switchComputer interface {
+	Switch(ctx context.Context, p any) (MasterPlan, error)
+}
+
 type bridgeComputer struct {
-	sc sideEffectComputer
+	se sideEffectComputer
+	sw switchComputer
 }
 
 func (bc bridgeComputer) Compute(ctx context.Context, p any) (any, error) {
-	return struct{}{}, bc.sc.Compute(ctx, p)
+	if bc.se != nil {
+		return struct{}{}, bc.se.Compute(ctx, p)
+	}
+
+	return bc.sw.Switch(ctx, p)
 }
 
 type SideEffectKey struct{}
@@ -35,8 +44,8 @@ func newAsyncResult(t async.Task[any]) Result {
 }
 
 func Outcome[V any](t async.Task[any]) V {
-	result, _ := t.Outcome()
-	return result.(V)
+	outcome, _ := t.Outcome()
+	return outcome.(V)
 }
 
 type SyncResult struct {
@@ -50,5 +59,10 @@ func newSyncResult(o any) SyncResult {
 }
 
 func Cast[V any](o any) V {
-	return o.(V)
+	if result, ok := o.(V); ok {
+		return result
+	}
+
+	var tmp V
+	return tmp
 }

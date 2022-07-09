@@ -1,4 +1,4 @@
-package fixedcostbranch
+package quote
 
 import (
 	"github.com/jamestrandung/go-die/die"

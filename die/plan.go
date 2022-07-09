@@ -8,7 +8,7 @@ type plan interface {
 	IsSequential() bool
 }
 
-type masterPlan interface {
+type MasterPlan interface {
 	plan
 	Execute(ctx context.Context) error
 }
