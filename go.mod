@@ -1,4 +1,4 @@
-module github.com/jamestrandung/go-cte
+module github.com/jamestrandung/go-die
 
 go 1.18
 
