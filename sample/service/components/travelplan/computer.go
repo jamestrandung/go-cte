@@ -2,9 +2,9 @@ package travelplan
 
 import (
 	"context"
-	"github.com/jamestrandung/go-die/sample/dependencies/mapservice"
+	"github.com/jamestrandung/go-cte/sample/dependencies/mapservice"
 
-	"github.com/jamestrandung/go-die/sample/config"
+	"github.com/jamestrandung/go-cte/sample/config"
 )
 
 // Computers with external dependencies still has to register itself with the

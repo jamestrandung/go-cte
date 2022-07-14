@@ -1,4 +1,4 @@
-package die
+package cte
 
 import "errors"
 

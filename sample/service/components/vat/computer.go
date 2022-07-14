@@ -3,7 +3,7 @@ package vat
 import (
 	"context"
 
-	"github.com/jamestrandung/go-die/sample/config"
+	"github.com/jamestrandung/go-cte/sample/config"
 )
 
 // Computers without any external dependencies can register itself directly

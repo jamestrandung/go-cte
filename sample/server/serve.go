@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/jamestrandung/go-die/sample/dependencies/configsfetcher"
-	"github.com/jamestrandung/go-die/sample/dependencies/mapservice"
+	"github.com/jamestrandung/go-cte/sample/dependencies/configsfetcher"
+	"github.com/jamestrandung/go-cte/sample/dependencies/mapservice"
 )
 
 type dependencies struct {

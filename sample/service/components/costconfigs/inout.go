@@ -1,8 +1,8 @@
 package costconfigs
 
 import (
-	"github.com/jamestrandung/go-die/die"
-	"github.com/jamestrandung/go-die/sample/dependencies/configsfetcher"
+	"github.com/jamestrandung/go-cte/cte"
+	"github.com/jamestrandung/go-cte/sample/dependencies/configsfetcher"
 )
 
 type plan interface {
@@ -19,32 +19,32 @@ type Input interface {
 }
 
 type Output interface {
-	SetCostConfigs(die.Result)
+	SetCostConfigs(cte.Result)
 }
 
-type CostConfigs die.Result
+type CostConfigs cte.Result
 
 func (c CostConfigs) GetBaseCost() float64 {
-	result := die.Outcome[configsfetcher.MergedCostConfigs](c.Task)
+	result := cte.Outcome[configsfetcher.MergedCostConfigs](c.Task)
 	return result.BaseCost
 }
 
 func (c CostConfigs) GetCostPerKilometer() float64 {
-	result := die.Outcome[configsfetcher.MergedCostConfigs](c.Task)
+	result := cte.Outcome[configsfetcher.MergedCostConfigs](c.Task)
 	return result.CostPerKilometer
 }
 
 func (c CostConfigs) GetCostPerMinute() float64 {
-	result := die.Outcome[configsfetcher.MergedCostConfigs](c.Task)
+	result := cte.Outcome[configsfetcher.MergedCostConfigs](c.Task)
 	return result.CostPerMinute
 }
 
 func (c CostConfigs) GetPlatformFee() float64 {
-	result := die.Outcome[configsfetcher.MergedCostConfigs](c.Task)
+	result := cte.Outcome[configsfetcher.MergedCostConfigs](c.Task)
 	return result.PlatformFee
 }
 
 func (c CostConfigs) GetVATPercent() float64 {
-	result := die.Outcome[configsfetcher.MergedCostConfigs](c.Task)
+	result := cte.Outcome[configsfetcher.MergedCostConfigs](c.Task)
 	return result.VATPercent
 }

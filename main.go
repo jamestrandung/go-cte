@@ -3,15 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/jamestrandung/go-die/sample/dto"
+	"github.com/jamestrandung/go-cte/sample/dto"
 	"go/ast"
 	"go/token"
 	"go/types"
 
-	"github.com/jamestrandung/go-die/sample/config"
-	"github.com/jamestrandung/go-die/sample/server"
-	"github.com/jamestrandung/go-die/sample/service/scaffolding/parallel"
-	"github.com/jamestrandung/go-die/sample/service/scaffolding/sequential"
+	"github.com/jamestrandung/go-cte/sample/config"
+	"github.com/jamestrandung/go-cte/sample/server"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/parallel"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/sequential"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -78,7 +78,7 @@ func testParsePackage2() {
 	loadConfig := new(packages.Config)
 	loadConfig.Mode = loadMode
 	loadConfig.Fset = token.NewFileSet()
-	pkgs, err := packages.Load(loadConfig, "github.com/jamestrandung/go-die/sample/...")
+	pkgs, err := packages.Load(loadConfig, "github.com/jamestrandung/go-cte/sample/...")
 	if err != nil {
 		panic(err)
 	}
@@ -128,7 +128,7 @@ func testParsePackage2() {
 		}
 	}
 
-	// pkg, err := importer.Default().Import("github.com/jamestrandung/go-die/core")
+	// pkg, err := importer.Default().Import("github.com/jamestrandung/go-cte/core")
 	// if err != nil {
 	// 	fmt.Printf("error: %s\n", err.Error())
 	// 	return
