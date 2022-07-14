@@ -16,19 +16,62 @@
 // OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING
 // THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
 
-package parallel
+package cte
 
 import (
-	"testing"
-
-	"github.com/jamestrandung/go-cte/sample/config"
-	"github.com/stretchr/testify/assert"
+	"context"
+	"fmt"
+	"reflect"
+	"runtime/debug"
 )
 
-func TestParallelPlan_IsAnalyzed(t *testing.T) {
-	assert.True(t, config.Engine.IsAnalyzed(&ParallelPlan{}))
+func (e Engine) IsAnalyzed(p plan) bool {
+	_, ok := e.plans[extractFullNameFromValue(p)]
+	return ok
 }
 
-func TestParallelPlan_IsExecutable(t *testing.T) {
-	assert.Nil(t, config.Engine.IsExecutable(&ParallelPlan{}))
+func (e Engine) IsRegistered(v any) bool {
+	fullName := extractFullNameFromValue(v)
+
+	_, ok := e.computers[fullName]
+	return ok
+}
+
+func (e Engine) IsExecutable(p masterPlan) (err error) {
+	var verifyFn func(planName string)
+	verifyFn = func(planName string) {
+		ap := e.findAnalyzedPlan(planName)
+
+		for _, component := range ap.components {
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						err = fmt.Errorf("plan is not executable, %v", r)
+						fmt.Println(string(debug.Stack()))
+					}
+				}()
+
+				// If plan is not executable, 1 of the impureComputer will panic
+				if c, ok := e.computers[component.id]; ok {
+					c.Compute(context.Background(), p)
+				}
+
+				if _, ok := e.plans[component.id]; ok {
+					verifyFn(component.id)
+				}
+			}()
+		}
+	}
+
+	verifyFn(extractFullNameFromValue(p))
+
+	return
+}
+
+func isValid(p plan) {
+	val := reflect.ValueOf(p)
+	if val.Kind() != reflect.Pointer {
+		panic(ErrPlanMustUsePointerReceiver)
+	}
+
 }

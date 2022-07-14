@@ -16,19 +16,37 @@
 // OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING
 // THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
 
-package parallel
+package cte
 
 import (
-	"testing"
-
-	"github.com/jamestrandung/go-cte/sample/config"
-	"github.com/stretchr/testify/assert"
+	"reflect"
+	"strings"
 )
 
-func TestParallelPlan_IsAnalyzed(t *testing.T) {
-	assert.True(t, config.Engine.IsAnalyzed(&ParallelPlan{}))
+func swallowErrPlanExecutionEndingEarly(err error) error {
+	// Execution was intentionally ended by clients
+	if err == ErrPlanExecutionEndingEarly {
+		return nil
+	}
+
+	return err
 }
 
-func TestParallelPlan_IsExecutable(t *testing.T) {
-	assert.Nil(t, config.Engine.IsExecutable(&ParallelPlan{}))
+func extractFullNameFromValue(v any) string {
+	if reflect.ValueOf(v).Kind() == reflect.Pointer {
+		t := reflect.ValueOf(v).Elem().Type()
+		return extractFullNameFromType(t)
+	}
+
+	t := reflect.TypeOf(v)
+	return extractFullNameFromType(t)
+}
+
+func extractFullNameFromType(t reflect.Type) string {
+	return t.PkgPath() + "/" + t.Name()
+}
+
+func extractShortName(fullName string) string {
+	shortNameIdx := strings.LastIndex(fullName, "/")
+	return fullName[shortNameIdx+1:]
 }

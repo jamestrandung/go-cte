@@ -16,19 +16,57 @@
 // OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING
 // THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
 
-package parallel
+package cte
 
 import (
-	"testing"
+	"context"
 
-	"github.com/jamestrandung/go-cte/sample/config"
-	"github.com/stretchr/testify/assert"
+	"github.com/jamestrandung/go-concurrency/async"
 )
 
-func TestParallelPlan_IsAnalyzed(t *testing.T) {
-	assert.True(t, config.Engine.IsAnalyzed(&ParallelPlan{}))
+type impureComputer interface {
+	Compute(ctx context.Context, p any) (any, error)
 }
 
-func TestParallelPlan_IsExecutable(t *testing.T) {
-	assert.Nil(t, config.Engine.IsExecutable(&ParallelPlan{}))
+type sideEffectComputer interface {
+	Compute(ctx context.Context, p any) error
+}
+
+type bridgeComputer struct {
+	sc sideEffectComputer
+}
+
+func (bc bridgeComputer) Compute(ctx context.Context, p any) (any, error) {
+	return struct{}{}, bc.sc.Compute(ctx, p)
+}
+
+type SideEffectKey struct{}
+
+type Result struct {
+	Task async.Task[any]
+}
+
+func newAsyncResult(t async.Task[any]) Result {
+	return Result{
+		Task: t,
+	}
+}
+
+func Outcome[V any](t async.Task[any]) V {
+	result, _ := t.Outcome()
+	return result.(V)
+}
+
+type SyncResult struct {
+	Outcome any
+}
+
+func newSyncResult(o any) SyncResult {
+	return SyncResult{
+		Outcome: o,
+	}
+}
+
+func Cast[V any](o any) V {
+	return o.(V)
 }

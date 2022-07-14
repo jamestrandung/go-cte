@@ -16,19 +16,25 @@
 // OR IMPLY ANY RIGHTS TO REPRODUCE, DISCLOSE OR DISTRIBUTE ITS CONTENTS, OR TO MANUFACTURE, USE, OR SELL ANYTHING
 // THAT IT MAY DESCRIBE, IN WHOLE OR IN PART.
 
-package parallel
+package cte
 
 import (
-	"testing"
-
-	"github.com/jamestrandung/go-cte/sample/config"
-	"github.com/stretchr/testify/assert"
+	"context"
 )
 
-func TestParallelPlan_IsAnalyzed(t *testing.T) {
-	assert.True(t, config.Engine.IsAnalyzed(&ParallelPlan{}))
+type plan interface {
+	IsSequential() bool
 }
 
-func TestParallelPlan_IsExecutable(t *testing.T) {
-	assert.Nil(t, config.Engine.IsExecutable(&ParallelPlan{}))
+type masterPlan interface {
+	plan
+	Execute(ctx context.Context) error
+}
+
+type pre interface {
+	PreExecute(p any) error
+}
+
+type post interface {
+	PostExecute(p any) error
 }
