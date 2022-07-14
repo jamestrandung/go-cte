@@ -1,8 +1,8 @@
 package travelplan
 
 import (
-	"github.com/jamestrandung/go-die/die"
-	"github.com/jamestrandung/go-die/sample/dependencies/mapservice"
+	"github.com/jamestrandung/go-cte/cte"
+	"github.com/jamestrandung/go-cte/sample/dependencies/mapservice"
 )
 
 type plan interface {
@@ -19,14 +19,14 @@ type Input interface {
 	GetPointB() string
 }
 
-type TravelPlan die.Result
+type TravelPlan cte.Result
 
 func (p TravelPlan) GetTravelDistance() float64 {
-	result := die.Outcome[mapservice.Route](p.Task)
+	result := cte.Outcome[mapservice.Route](p.Task)
 	return result.Distance
 }
 
 func (p TravelPlan) GetTravelDuration() float64 {
-	result := die.Outcome[mapservice.Route](p.Task)
+	result := cte.Outcome[mapservice.Route](p.Task)
 	return result.Duration
 }

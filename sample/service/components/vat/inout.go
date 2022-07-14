@@ -1,7 +1,7 @@
 package vat
 
 import (
-	"github.com/jamestrandung/go-die/die"
+	"github.com/jamestrandung/go-cte/cte"
 )
 
 type plan interface {
@@ -18,8 +18,8 @@ type Output interface {
 	SetTotalCost(float64)
 }
 
-type VATAmount die.SyncResult
+type VATAmount cte.SyncResult
 
 func (a VATAmount) GetVATAmount() float64 {
-	return die.Cast[float64](a.Outcome)
+	return cte.Cast[float64](a.Outcome)
 }

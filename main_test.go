@@ -1,15 +1,15 @@
 package main
 
 import (
-    "context"
-    "testing"
+	"context"
+	"testing"
 
-    "github.com/jamestrandung/go-die/sample/dto"
+	"github.com/jamestrandung/go-cte/sample/dto"
 
-    "github.com/jamestrandung/go-die/sample/config"
-    "github.com/jamestrandung/go-die/sample/server"
-    "github.com/jamestrandung/go-die/sample/service/scaffolding/parallel"
-    "github.com/jamestrandung/go-die/sample/service/scaffolding/sequential"
+	"github.com/jamestrandung/go-cte/sample/config"
+	"github.com/jamestrandung/go-cte/sample/server"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/parallel"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/sequential"
 )
 
 func BenchmarkCustomPostHook_PostExecute(b *testing.B) {

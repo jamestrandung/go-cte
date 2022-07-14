@@ -1,11 +1,11 @@
 package travelplan
 
 import (
-    "context"
+	"context"
 
-    "github.com/jamestrandung/go-die/sample/dependencies/mapservice"
+	"github.com/jamestrandung/go-cte/sample/dependencies/mapservice"
 
-    "github.com/jamestrandung/go-die/sample/config"
+	"github.com/jamestrandung/go-cte/sample/config"
 )
 
 func init() {

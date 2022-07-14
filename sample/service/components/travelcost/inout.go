@@ -1,7 +1,7 @@
 package travelcost
 
 import (
-	"github.com/jamestrandung/go-die/die"
+	"github.com/jamestrandung/go-cte/cte"
 )
 
 type plan interface {
@@ -16,9 +16,9 @@ type Input interface {
 	GetCostPerMinute() float64
 }
 
-type TravelCost die.Result
+type TravelCost cte.Result
 
 func (r TravelCost) GetTravelCost() float64 {
-	result := die.Outcome[float64](r.Task)
+	result := cte.Outcome[float64](r.Task)
 	return result
 }

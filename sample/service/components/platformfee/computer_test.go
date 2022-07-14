@@ -3,7 +3,7 @@ package platformfee
 import (
 	"testing"
 
-	"github.com/jamestrandung/go-die/sample/config"
+	"github.com/jamestrandung/go-cte/sample/config"
 	"github.com/stretchr/testify/assert"
 )
 

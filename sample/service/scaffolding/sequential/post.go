@@ -1,6 +1,6 @@
 package sequential
 
-import "github.com/jamestrandung/go-die/sample/config"
+import "github.com/jamestrandung/go-cte/sample/config"
 
 type post interface {
 	GetTotalCost() float64

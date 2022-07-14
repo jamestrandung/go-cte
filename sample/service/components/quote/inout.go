@@ -1,9 +1,9 @@
 package quote
 
 import (
-	"github.com/jamestrandung/go-die/die"
-	"github.com/jamestrandung/go-die/sample/service/scaffolding/fixedcost"
-	"github.com/jamestrandung/go-die/sample/service/scaffolding/sequential"
+	"github.com/jamestrandung/go-cte/cte"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/fixedcost"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/sequential"
 )
 
 type plan interface {
@@ -21,12 +21,12 @@ type result interface {
 	GetVATAmount() float64
 }
 
-type CalculatedCost die.Result
+type CalculatedCost cte.Result
 
 func (c CalculatedCost) GetTotalCost() float64 {
-	return die.Outcome[result](c.Task).GetTotalCost()
+	return cte.Outcome[result](c.Task).GetTotalCost()
 }
 
 func (c CalculatedCost) GetVATAmount() float64 {
-	return die.Outcome[result](c.Task).GetVATAmount()
+	return cte.Outcome[result](c.Task).GetVATAmount()
 }

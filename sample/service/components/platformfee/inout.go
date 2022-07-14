@@ -1,6 +1,6 @@
 package platformfee
 
-import "github.com/jamestrandung/go-die/die"
+import "github.com/jamestrandung/go-cte/cte"
 
 type plan interface {
 	Input
@@ -16,4 +16,4 @@ type Output interface {
 	SetTotalCost(float64)
 }
 
-type PlatformFee die.SideEffectKey
+type PlatformFee cte.SideEffectKey

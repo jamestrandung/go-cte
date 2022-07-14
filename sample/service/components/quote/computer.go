@@ -3,10 +3,10 @@ package quote
 import (
 	"context"
 
-	"github.com/jamestrandung/go-die/die"
-	"github.com/jamestrandung/go-die/sample/config"
-	"github.com/jamestrandung/go-die/sample/service/scaffolding/fixedcost"
-	"github.com/jamestrandung/go-die/sample/service/scaffolding/sequential"
+	"github.com/jamestrandung/go-cte/cte"
+	"github.com/jamestrandung/go-cte/sample/config"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/fixedcost"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/sequential"
 )
 
 func init() {
@@ -17,7 +17,7 @@ func init() {
 
 type computer struct{}
 
-func (c computer) Switch(ctx context.Context, p any) (die.MasterPlan, error) {
+func (c computer) Switch(ctx context.Context, p any) (cte.MasterPlan, error) {
 	casted := p.(plan)
 
 	if casted.GetIsFixedCostEnabled() {

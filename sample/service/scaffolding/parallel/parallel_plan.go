@@ -1,14 +1,14 @@
 package parallel
 
 import (
-    "context"
+	"context"
 
-    "github.com/jamestrandung/go-die/sample/service/components/quote"
+	"github.com/jamestrandung/go-cte/sample/service/components/quote"
 
-    "github.com/jamestrandung/go-die/sample/config"
-    "github.com/jamestrandung/go-die/sample/service/components/costconfigs"
-    "github.com/jamestrandung/go-die/sample/service/components/travelcost"
-    "github.com/jamestrandung/go-die/sample/service/components/travelplan"
+	"github.com/jamestrandung/go-cte/sample/config"
+	"github.com/jamestrandung/go-cte/sample/service/components/costconfigs"
+	"github.com/jamestrandung/go-cte/sample/service/components/travelcost"
+	"github.com/jamestrandung/go-cte/sample/service/components/travelplan"
 )
 
 type ParallelPlan struct {

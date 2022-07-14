@@ -1,11 +1,11 @@
 package sequential
 
 import (
-    "context"
+	"context"
 
-    "github.com/jamestrandung/go-die/sample/config"
-    "github.com/jamestrandung/go-die/sample/service/components/platformfee"
-    "github.com/jamestrandung/go-die/sample/service/components/vat"
+	"github.com/jamestrandung/go-cte/sample/config"
+	"github.com/jamestrandung/go-cte/sample/service/components/platformfee"
+	"github.com/jamestrandung/go-cte/sample/service/components/vat"
 )
 
 type SequentialPlan struct {

@@ -1,7 +1,7 @@
 package sequential
 
 import (
-	"github.com/jamestrandung/go-die/sample/config"
+	"github.com/jamestrandung/go-cte/sample/config"
 )
 
 var planName string
