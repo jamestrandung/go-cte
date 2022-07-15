@@ -18,11 +18,12 @@ var (
 )
 
 type parsedComponent struct {
-	id           string
-	fieldIdx     int
-	fieldType    reflect.Type
-	isSyncResult bool
-	requireSet   bool
+	id            string
+	fieldIdx      int
+	fieldType     reflect.Type
+	isSyncResult  bool
+	requireSet    bool
+	isPointerType bool
 }
 
 type analyzedPlan struct {
@@ -88,10 +89,17 @@ func (e Engine) AnalyzePlan(p Plan) string {
 
 	var preHooks []Pre
 	var postHooks []Post
+	var components []parsedComponent
 
-	components := make([]parsedComponent, val.NumField())
 	for i := 0; i < val.NumField(); i++ {
-		fieldType := val.Type().Field(i).Type
+		rawFieldType := val.Type().Field(i).Type
+		isPointerType := rawFieldType.Kind() == reflect.Pointer
+
+		fieldType := rawFieldType
+		if isPointerType {
+			fieldType = fieldType.Elem()
+		}
+
 		fieldPointerType := reflect.PointerTo(fieldType)
 
 		// Hook types might be embedded in a parent plan struct. Hence, we need to check if the type
@@ -103,6 +111,9 @@ func (e Engine) AnalyzePlan(p Plan) string {
 		isPostHookType := fieldType.Implements(postHookType) || fieldPointerType.Implements(postHookType)
 
 		if typeAndPointerTypeIsNotPlanType && isPreHookType {
+			// Call to Interface() returns a pointer value which is acceptable for
+			// both scenarios where fieldType uses pointer or value receiver to
+			// implement an interface
 			preHook := reflect.New(fieldType).Interface().(Pre)
 			preHooks = append(preHooks, preHook)
 
@@ -110,6 +121,9 @@ func (e Engine) AnalyzePlan(p Plan) string {
 		}
 
 		if typeAndPointerTypeIsNotPlanType && isPostHookType {
+			// Call to Interface() returns a pointer value which is acceptable for
+			// both scenarios where fieldType uses pointer or value receiver to
+			// implement an interface
 			postHook := reflect.New(fieldType).Interface().(Post)
 			postHooks = append(postHooks, postHook)
 
@@ -122,10 +136,11 @@ func (e Engine) AnalyzePlan(p Plan) string {
 			if fieldType.ConvertibleTo(resultType) {
 				// Both sequential & parallel plans can contain Result fields
 				return parsedComponent{
-					id:         componentID,
-					fieldIdx:   i,
-					fieldType:  fieldType,
-					requireSet: true,
+					id:            componentID,
+					fieldIdx:      i,
+					fieldType:     fieldType,
+					requireSet:    true,
+					isPointerType: isPointerType,
 				}
 			}
 
@@ -135,20 +150,22 @@ func (e Engine) AnalyzePlan(p Plan) string {
 				}
 
 				return parsedComponent{
-					id:           componentID,
-					fieldIdx:     i,
-					fieldType:    fieldType,
-					isSyncResult: true,
-					requireSet:   true,
+					id:            componentID,
+					fieldIdx:      i,
+					fieldType:     fieldType,
+					isSyncResult:  true,
+					requireSet:    true,
+					isPointerType: isPointerType,
 				}
 			}
 
 			return parsedComponent{
-				id: componentID,
+				id:       componentID,
+				fieldIdx: i,
 			}
 		}()
 
-		components[i] = component
+		components = append(components, component)
 	}
 
 	planName := extractFullNameFromValue(p)
@@ -207,7 +224,7 @@ func (e Engine) doExecute(ctx context.Context, planName string, p MasterPlan, cu
 }
 
 func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue reflect.Value, components []parsedComponent) error {
-	for idx, component := range components {
+	for _, component := range components {
 		if c, ok := e.computers[component.id]; ok {
 			task := async.NewTask(
 				func(taskCtx context.Context) (any, error) {
@@ -228,6 +245,7 @@ func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue re
 			// Register Result/SyncResult in a sequential plan's field
 			if component.requireSet {
 				field := curPlanValue.Field(component.fieldIdx)
+
 				casted := func() reflect.Value {
 					if component.isSyncResult {
 						return reflect.ValueOf(newSyncResult(result)).Convert(component.fieldType)
@@ -236,7 +254,18 @@ func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue re
 					return reflect.ValueOf(newResult(task)).Convert(component.fieldType)
 				}()
 
-				field.Set(casted)
+				resultTakingIntoAccountPointerType := func() reflect.Value {
+					if !component.isPointerType {
+						return casted
+					}
+
+					rv := reflect.New(component.fieldType)
+					rv.Elem().Set(casted)
+
+					return rv
+				}()
+
+				field.Set(resultTakingIntoAccountPointerType)
 			}
 
 			continue
@@ -245,7 +274,7 @@ func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue re
 		// Nested plan gets executed synchronously
 		if ap, ok := e.plans[component.id]; ok {
 			// Nested plan is always a value, never a pointer. Hence, no need to call Elem().
-			nestedPlanValue := curPlanValue.Field(idx)
+			nestedPlanValue := curPlanValue.Field(component.fieldIdx)
 
 			err := e.doExecute(ctx, component.id, p, nestedPlanValue, ap.isSequential)
 			if err != nil && err != ErrPlanExecutionEndingEarly {
@@ -259,7 +288,7 @@ func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue re
 
 func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue reflect.Value, components []parsedComponent) error {
 	tasks := make([]async.SilentTask, 0, len(components))
-	for idx, component := range components {
+	for _, component := range components {
 		componentID := component.id
 
 		if c, ok := e.computers[componentID]; ok {
@@ -279,9 +308,20 @@ func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue r
 			// Register Result in a parallel plan's field
 			if component.requireSet {
 				field := curPlanValue.Field(component.fieldIdx)
-				casted := reflect.ValueOf(newResult(task)).Convert(component.fieldType)
 
-				field.Set(casted)
+				result := func() reflect.Value {
+					casted := reflect.ValueOf(newResult(task)).Convert(component.fieldType)
+					if !component.isPointerType {
+						return casted
+					}
+
+					rv := reflect.New(component.fieldType)
+					rv.Elem().Set(casted)
+
+					return rv
+				}()
+
+				field.Set(result)
 			}
 
 			continue
@@ -290,7 +330,7 @@ func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue r
 		// Nested plan gets executed asynchronously by wrapping it inside a task
 		if ap, ok := e.plans[componentID]; ok {
 			// Nested plan is always a value, never a pointer. Hence, no need to call Elem().
-			nestedPlanValue := curPlanValue.Field(idx)
+			nestedPlanValue := curPlanValue.Field(component.fieldIdx)
 
 			task := async.NewSilentTask(
 				func(taskCtx context.Context) error {

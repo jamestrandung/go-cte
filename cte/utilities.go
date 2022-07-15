@@ -15,13 +15,17 @@ func swallowErrPlanExecutionEndingEarly(err error) error {
 }
 
 func extractFullNameFromValue(v any) string {
-	if reflect.ValueOf(v).Kind() == reflect.Pointer {
-		t := reflect.ValueOf(v).Elem().Type()
-		return extractFullNameFromType(t)
-	}
+	rv := reflect.ValueOf(v)
 
-	t := reflect.TypeOf(v)
-	return extractFullNameFromType(t)
+	rt := func() reflect.Type {
+		if rv.Kind() == reflect.Pointer {
+			return rv.Elem().Type()
+		}
+
+		return rv.Type()
+	}()
+
+	return extractFullNameFromType(rt)
 }
 
 func extractFullNameFromType(t reflect.Type) string {

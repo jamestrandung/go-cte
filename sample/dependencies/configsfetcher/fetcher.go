@@ -19,7 +19,7 @@ func (Fetcher) Fetch() MergedCostConfigs {
 		CostPerMinute:      5,
 		PlatformFee:        8,
 		VATPercent:         10,
-		IsFixedCostEnabled: true,
+		IsFixedCostEnabled: false,
 		FixedCost:          10,
 	}
 }
