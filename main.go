@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/jamestrandung/go-cte/sample/service/components/platformfee"
 	"go/ast"
 	"go/token"
 	"go/types"
@@ -24,45 +25,23 @@ func (customPostHook) PostExecute(p any) error {
 	return nil
 }
 
-type parent struct {
-	child
+type prePlatformFeeHook struct{}
+
+func (prePlatformFeeHook) PreExecute(p any) error {
+	config.Print("Before platform fee computer custom hook")
+
+	return nil
 }
 
-type child struct {
-	field float64
-}
+type postPlatformFeeHook struct{}
 
-func (c *child) set(num float64) {
-	c.field = num
-}
+func (postPlatformFeeHook) PostExecute(p any) error {
+	config.Print("After platform fee computer custom hook")
 
-func (c *child) get() float64 {
-	return c.field
-}
-
-type in interface {
-	set(num float64)
-}
-
-func doSet(i in) {
-	i.set(3)
+	return nil
 }
 
 func main() {
-	// p := parent{}
-	// fmt.Println(p.get())
-	// p.set(2)
-	// fmt.Println(p.get())
-	// doSet(p)
-	// fmt.Println(p.get())
-
-	// method, ok := reflect.ValueOf(dummy{}).Type().MethodByName("Do")
-	// if ok {
-	// 	fmt.Println(method)
-	// }
-	//
-	// method.Func.Call([]reflect.Value{reflect.ValueOf(dummy{})})
-
 	testEngine()
 }
 
@@ -142,7 +121,9 @@ func testParsePackage2() {
 func testEngine() {
 	server.Serve()
 
-	config.Engine.ConnectPostHook(&sequential.SequentialPlan{}, customPostHook{})
+	config.Engine.ConnectPostHook(sequential.SequentialPlan{}, customPostHook{})
+	config.Engine.ConnectPreHook(platformfee.PlatformFee{}, prePlatformFeeHook{})
+	config.Engine.ConnectPostHook(platformfee.PlatformFee{}, postPlatformFeeHook{})
 
 	p := parallel.NewPlan(
 		dto.CostRequest{

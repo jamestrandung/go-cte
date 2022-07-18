@@ -29,19 +29,21 @@ type parsedComponent struct {
 type analyzedPlan struct {
 	isSequential bool
 	components   []parsedComponent
-	preHooks     []Pre
-	postHooks    []Post
 }
 
 type Engine struct {
 	computers map[string]ImpureComputer
 	plans     map[string]analyzedPlan
+	preHooks  map[string][]Pre
+	postHooks map[string][]Post
 }
 
 func NewEngine() Engine {
 	return Engine{
 		computers: make(map[string]ImpureComputer),
 		plans:     make(map[string]analyzedPlan),
+		preHooks:  make(map[string][]Pre),
+		postHooks: make(map[string][]Post),
 	}
 }
 
@@ -61,22 +63,17 @@ func (e Engine) RegisterSwitchComputer(v any, c SwitchComputer) {
 	}
 }
 
-func (e Engine) ConnectPreHook(p Plan, hooks ...Pre) {
-	planName := extractFullNameFromValue(p)
+// TODO: use tags to connect hooks
+func (e Engine) ConnectPreHook(v any, hooks ...Pre) {
+	componentID := extractFullNameFromValue(v)
 
-	toUpdate := e.findExistingPlanOrCreate(planName)
-	toUpdate.preHooks = append(toUpdate.preHooks, hooks...)
-
-	e.plans[planName] = toUpdate
+	e.preHooks[componentID] = append(e.preHooks[componentID], hooks...)
 }
 
-func (e Engine) ConnectPostHook(p Plan, hooks ...Post) {
-	planName := extractFullNameFromValue(p)
+func (e Engine) ConnectPostHook(v any, hooks ...Post) {
+	componentID := extractFullNameFromValue(v)
 
-	toUpdate := e.findExistingPlanOrCreate(planName)
-	toUpdate.postHooks = append(toUpdate.postHooks, hooks...)
-
-	e.plans[planName] = toUpdate
+	e.postHooks[componentID] = append(e.postHooks[componentID], hooks...)
 }
 
 func (e Engine) AnalyzePlan(p Plan) string {
@@ -170,13 +167,13 @@ func (e Engine) AnalyzePlan(p Plan) string {
 
 	planName := extractFullNameFromValue(p)
 
-	toUpdate := e.findExistingPlanOrCreate(planName)
-	toUpdate.isSequential = p.IsSequential()
-	toUpdate.components = components
-	toUpdate.preHooks = append(toUpdate.preHooks, preHooks...)
-	toUpdate.postHooks = append(toUpdate.postHooks, postHooks...)
+	e.preHooks[planName] = append(e.preHooks[planName], preHooks...)
+	e.postHooks[planName] = append(e.postHooks[planName], postHooks...)
 
-	e.plans[planName] = toUpdate
+	e.plans[planName] = analyzedPlan{
+		isSequential: p.IsSequential(),
+		components:   components,
+	}
 
 	return planName
 }
@@ -186,20 +183,38 @@ func (e Engine) ExecuteMasterPlan(ctx context.Context, planName string, p Master
 	// Should be safe to extract value.
 	planValue := reflect.ValueOf(p).Elem()
 
-	if err := e.doExecute(ctx, planName, p, planValue, p.IsSequential()); err != nil {
+	if err := e.doExecutePlan(ctx, planName, p, planValue, p.IsSequential()); err != nil {
 		return swallowErrPlanExecutionEndingEarly(err)
 	}
 
 	return nil
 }
 
-func (e Engine) doExecute(ctx context.Context, planName string, p MasterPlan, curPlanValue reflect.Value, isSequential bool) error {
-	ap := e.findAnalyzedPlan(planName)
-
-	for _, h := range ap.preHooks {
+func (e Engine) preExecute(componentID string, p MasterPlan) error {
+	for _, h := range e.preHooks[componentID] {
 		if err := h.PreExecute(p); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (e Engine) postExecute(componentID string, p MasterPlan) error {
+	for _, h := range e.postHooks[componentID] {
+		if err := h.PostExecute(p); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (e Engine) doExecutePlan(ctx context.Context, planName string, p MasterPlan, curPlanValue reflect.Value, isSequential bool) error {
+	ap := e.findAnalyzedPlan(planName)
+
+	if err := e.preExecute(planName, p); err != nil {
+		return err
 	}
 
 	err := func() error {
@@ -214,13 +229,28 @@ func (e Engine) doExecute(ctx context.Context, planName string, p MasterPlan, cu
 		return err
 	}
 
-	for _, h := range ap.postHooks {
-		if err := h.PostExecute(p); err != nil {
-			return err
-		}
+	return e.postExecute(planName, p)
+}
+
+func (e Engine) doExecuteTask(ctx context.Context, componentID string, c ImpureComputer, p MasterPlan) (any, error) {
+	if err := e.preExecute(componentID, p); err != nil {
+		return nil, err
 	}
 
-	return nil
+	result, err := c.Compute(ctx, p)
+	if tep, ok := result.(toExecutePlan); ok {
+		if err != nil {
+			return tep.mp, err
+		}
+
+		return tep.mp, tep.mp.Execute(ctx)
+	}
+
+	if err == nil {
+		err = e.postExecute(componentID, p)
+	}
+
+	return result, err
 }
 
 func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue reflect.Value, components []parsedComponent) error {
@@ -228,19 +258,11 @@ func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue re
 		if c, ok := e.computers[component.id]; ok {
 			task := async.NewTask(
 				func(taskCtx context.Context) (any, error) {
-					result, err := c.Compute(taskCtx, p)
-					if tep, ok := result.(toExecutePlan); err == nil && ok {
-						return tep.mp, tep.mp.Execute(taskCtx)
-					}
-
-					return result, err
+					return e.doExecuteTask(taskCtx, component.id, c, p)
 				},
 			)
 
 			result, err := task.RunSync(ctx).Outcome()
-			if err != nil {
-				return err
-			}
 
 			// Register Result/SyncResult in a sequential plan's field
 			if component.requireSet {
@@ -268,6 +290,10 @@ func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue re
 				field.Set(resultTakingIntoAccountPointerType)
 			}
 
+			if err != nil {
+				return err
+			}
+
 			continue
 		}
 
@@ -276,7 +302,7 @@ func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue re
 			// Nested plan is always a value, never a pointer. Hence, no need to call Elem().
 			nestedPlanValue := curPlanValue.Field(component.fieldIdx)
 
-			err := e.doExecute(ctx, component.id, p, nestedPlanValue, ap.isSequential)
+			err := e.doExecutePlan(ctx, component.id, p, nestedPlanValue, ap.isSequential)
 			if err != nil && err != ErrPlanExecutionEndingEarly {
 				return err
 			}
@@ -294,12 +320,7 @@ func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue r
 		if c, ok := e.computers[componentID]; ok {
 			task := async.NewTask(
 				func(taskCtx context.Context) (any, error) {
-					result, err := c.Compute(taskCtx, p)
-					if tep, ok := result.(toExecutePlan); err == nil && ok {
-						return tep.mp, tep.mp.Execute(taskCtx)
-					}
-
-					return result, err
+					return e.doExecuteTask(taskCtx, componentID, c, p)
 				},
 			)
 
@@ -309,7 +330,7 @@ func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue r
 			if component.requireSet {
 				field := curPlanValue.Field(component.fieldIdx)
 
-				result := func() reflect.Value {
+				resultTakingIntoAccountPointerType := func() reflect.Value {
 					casted := reflect.ValueOf(newResult(task)).Convert(component.fieldType)
 					if !component.isPointerType {
 						return casted
@@ -321,7 +342,7 @@ func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue r
 					return rv
 				}()
 
-				field.Set(result)
+				field.Set(resultTakingIntoAccountPointerType)
 			}
 
 			continue
@@ -334,7 +355,7 @@ func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue r
 
 			task := async.NewSilentTask(
 				func(taskCtx context.Context) error {
-					err := e.doExecute(taskCtx, component.id, p, nestedPlanValue, ap.isSequential)
+					err := e.doExecutePlan(taskCtx, component.id, p, nestedPlanValue, ap.isSequential)
 					if err != nil && err != ErrPlanExecutionEndingEarly {
 						return err
 					}

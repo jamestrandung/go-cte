@@ -4,9 +4,9 @@ import (
 	"context"
 	"github.com/jamestrandung/go-cte/sample/config"
 	"github.com/jamestrandung/go-cte/sample/service/components/costconfigs"
-	"github.com/jamestrandung/go-cte/sample/service/components/quote"
 	"github.com/jamestrandung/go-cte/sample/service/components/travelcost"
 	"github.com/jamestrandung/go-cte/sample/service/components/travelplan"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/sequential"
 )
 
 type ParallelPlan struct {
@@ -15,7 +15,7 @@ type ParallelPlan struct {
 	costconfigs.CostConfigs
 	travelplan.TravelPlan
 	travelcost.TravelCost
-	quote.CalculatedCost
+	sequential.SequentialPlan
 }
 
 func NewPlan(r Request, d Dependencies) *ParallelPlan {
