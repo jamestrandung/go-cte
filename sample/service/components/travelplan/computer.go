@@ -9,9 +9,7 @@ import (
 )
 
 func init() {
-	// config.Print("travelplan")
 	config.Engine.RegisterImpureComputer(TravelPlan{}, computer{})
-	// config.Print(config.Engine)
 }
 
 type computer struct{}

@@ -1,4 +1,4 @@
-package parallel
+package loading
 
 import (
 	"github.com/jamestrandung/go-cte/sample/service/components/costconfigs"
@@ -8,9 +8,4 @@ import (
 type Dependencies interface {
 	costconfigs.Dependencies
 	travelplan.Dependencies
-}
-
-type Request interface {
-	GetPointA() string
-	GetPointB() string
 }

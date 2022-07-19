@@ -1,4 +1,4 @@
-package parallel
+package loading
 
 import (
 	"testing"

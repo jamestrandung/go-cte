@@ -2,8 +2,8 @@ package quote
 
 import (
 	"github.com/jamestrandung/go-cte/cte"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/calculation"
 	"github.com/jamestrandung/go-cte/sample/service/scaffolding/fixedcost"
-	"github.com/jamestrandung/go-cte/sample/service/scaffolding/sequential"
 )
 
 type plan interface {
@@ -12,7 +12,7 @@ type plan interface {
 
 type Input interface {
 	fixedcost.Input
-	sequential.Input
+	calculation.Input
 	GetIsFixedCostEnabled() bool
 }
 

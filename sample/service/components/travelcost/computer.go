@@ -6,12 +6,8 @@ import (
 	"github.com/jamestrandung/go-cte/sample/config"
 )
 
-// Computers without any external dependencies can register itself directly
-// with the engine using init()
 func init() {
-	// config.Print("travelcost")
 	config.Engine.RegisterImpureComputer(TravelCost{}, computer{})
-	// config.Print(config.Engine)
 }
 
 type computer struct{}

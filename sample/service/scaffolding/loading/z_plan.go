@@ -1,4 +1,4 @@
-package parallel
+package loading
 
 import (
 	"github.com/jamestrandung/go-cte/sample/config"
@@ -7,6 +7,5 @@ import (
 var planName string
 
 func init() {
-	// config.Print("ParallelPlan")
 	planName = config.Engine.AnalyzePlan(&ParallelPlan{})
 }

@@ -1,4 +1,4 @@
-package sequential
+package calculation
 
 import (
 	"github.com/jamestrandung/go-cte/sample/config"
@@ -7,7 +7,6 @@ import (
 var planName string
 
 func init() {
-	// config.Print("SequentialPlan")
 	planName = config.Engine.AnalyzePlan(&SequentialPlan{})
 }
 

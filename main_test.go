@@ -8,16 +8,16 @@ import (
 
 	"github.com/jamestrandung/go-cte/sample/config"
 	"github.com/jamestrandung/go-cte/sample/server"
-	"github.com/jamestrandung/go-cte/sample/service/scaffolding/parallel"
-	"github.com/jamestrandung/go-cte/sample/service/scaffolding/sequential"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/calculation"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/loading"
 )
 
 func BenchmarkCustomPostHook_PostExecute(b *testing.B) {
 	server.Serve()
 
-	config.Engine.ConnectPostHook(&sequential.SequentialPlan{}, customPostHook{})
+	config.Engine.ConnectPostHook(&calculation.SequentialPlan{}, customPostHook{})
 
-	p := parallel.NewPlan(
+	p := loading.NewPlan(
 		dto.CostRequest{
 			PointA: "Clementi",
 			PointB: "Changi Airport",

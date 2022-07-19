@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jamestrandung/go-cte/sample/service/components/platformfee"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/endpoint"
 	"go/ast"
 	"go/token"
 	"go/types"
@@ -12,8 +13,7 @@ import (
 
 	"github.com/jamestrandung/go-cte/sample/config"
 	"github.com/jamestrandung/go-cte/sample/server"
-	"github.com/jamestrandung/go-cte/sample/service/scaffolding/parallel"
-	"github.com/jamestrandung/go-cte/sample/service/scaffolding/sequential"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/calculation"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -121,11 +121,11 @@ func testParsePackage2() {
 func testEngine() {
 	server.Serve()
 
-	config.Engine.ConnectPostHook(sequential.SequentialPlan{}, customPostHook{})
+	config.Engine.ConnectPostHook(calculation.SequentialPlan{}, customPostHook{})
 	config.Engine.ConnectPreHook(platformfee.PlatformFee{}, prePlatformFeeHook{})
 	config.Engine.ConnectPostHook(platformfee.PlatformFee{}, postPlatformFeeHook{})
 
-	p := parallel.NewPlan(
+	p := endpoint.NewPlan(
 		dto.CostRequest{
 			PointA: "Clementi",
 			PointB: "Changi Airport",

@@ -1,4 +1,4 @@
-package sequential
+package calculation
 
 import (
 	"context"

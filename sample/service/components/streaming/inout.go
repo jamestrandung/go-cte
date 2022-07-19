@@ -8,7 +8,6 @@ type plan interface {
 
 type Input interface {
 	GetTotalCost() float64
-	GetVATAmount() float64
 }
 
 type CostStreaming cte.SideEffectKey

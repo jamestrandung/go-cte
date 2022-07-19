@@ -7,28 +7,28 @@ import (
 	"github.com/jamestrandung/go-cte/sample/service/components/vat"
 )
 
-type FixedCostPlan struct {
+type SequentialPlan struct {
 	Input
 	totalCost float64
 	vat.VATAmount
 }
 
-func NewPlan(in Input) *FixedCostPlan {
-	return &FixedCostPlan{
+func NewPlan(in Input) *SequentialPlan {
+	return &SequentialPlan{
 		Input: in,
 	}
 }
 
-func (p *FixedCostPlan) IsSequential() bool {
+func (p *SequentialPlan) IsSequential() bool {
 	return true
 }
 
-func (p *FixedCostPlan) Execute(ctx context.Context) error {
+func (p *SequentialPlan) Execute(ctx context.Context) error {
 	p.preExecute()
 
 	return config.Engine.ExecuteMasterPlan(ctx, planName, p)
 }
 
-func (p *FixedCostPlan) preExecute() {
+func (p *SequentialPlan) preExecute() {
 	p.totalCost = p.GetFixedCost()
 }

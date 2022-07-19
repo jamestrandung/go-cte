@@ -7,9 +7,7 @@ import (
 )
 
 func init() {
-	// config.Print("vat")
 	config.Engine.RegisterImpureComputer(VATAmount{}, computer{})
-	// config.Print(config.Engine)
 }
 
 type computer struct{}
