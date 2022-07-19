@@ -1,8 +1,8 @@
 package streaming
 
 import (
-	"context"
-	"github.com/jamestrandung/go-cte/sample/config"
+    "context"
+    "github.com/jamestrandung/go-cte/sample/config"
 )
 
 func init() {
@@ -20,5 +20,5 @@ func (c computer) Compute(ctx context.Context, p any) error {
 }
 
 func (computer) stream(p plan) {
-    config.Printf("Streaming calculated cost: %v", p.GetTotalCost())
+    config.Print("Streaming calculated cost:", p.GetTotalCost())
 }

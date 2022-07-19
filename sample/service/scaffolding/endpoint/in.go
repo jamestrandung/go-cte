@@ -8,6 +8,10 @@ type Dependencies interface {
 	loading.Dependencies
 }
 
+type Input interface {
+	Request
+}
+
 type Request interface {
 	GetPointA() string
 	GetPointB() string

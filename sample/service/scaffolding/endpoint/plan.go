@@ -9,16 +9,16 @@ import (
 )
 
 type SequentialPlan struct {
-	Request
+	Input
 	Dependencies
 	loading.ParallelPlan
 	quote.CalculatedCost
 	streaming.CostStreaming
 }
 
-func NewPlan(r Request, d Dependencies) *SequentialPlan {
+func NewPlan(r Input, d Dependencies) *SequentialPlan {
 	return &SequentialPlan{
-		Request:      r,
+		Input:        r,
 		Dependencies: d,
 	}
 }
