@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/endpoint"
 	"testing"
 
 	"github.com/jamestrandung/go-cte/sample/dto"
@@ -9,7 +10,6 @@ import (
 	"github.com/jamestrandung/go-cte/sample/config"
 	"github.com/jamestrandung/go-cte/sample/server"
 	"github.com/jamestrandung/go-cte/sample/service/scaffolding/calculation"
-	"github.com/jamestrandung/go-cte/sample/service/scaffolding/loading"
 )
 
 func BenchmarkCustomPostHook_PostExecute(b *testing.B) {
@@ -17,7 +17,7 @@ func BenchmarkCustomPostHook_PostExecute(b *testing.B) {
 
 	config.Engine.ConnectPostHook(&calculation.SequentialPlan{}, customPostHook{})
 
-	p := loading.NewPlan(
+	p := endpoint.NewPlan(
 		dto.CostRequest{
 			PointA: "Clementi",
 			PointB: "Changi Airport",

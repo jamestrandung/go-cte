@@ -2,24 +2,23 @@ package streaming
 
 import (
 	"context"
-	"fmt"
 	"github.com/jamestrandung/go-cte/sample/config"
 )
 
 func init() {
-	config.Engine.RegisterSideEffectComputer(CostStreaming{}, computer{})
+    config.Engine.RegisterSideEffectComputer(CostStreaming{}, computer{})
 }
 
 type computer struct{}
 
 func (c computer) Compute(ctx context.Context, p any) error {
-	casted := p.(plan)
+    casted := p.(plan)
 
-	c.stream(casted)
+    c.stream(casted)
 
-	return nil
+    return nil
 }
 
 func (computer) stream(p plan) {
-	fmt.Println("Streaming calculated cost:", p.GetTotalCost())
+    config.Printf("Streaming calculated cost: %v", p.GetTotalCost())
 }
