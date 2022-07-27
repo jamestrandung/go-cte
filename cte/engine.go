@@ -10,11 +10,13 @@ import (
 )
 
 var (
-	planType       = reflect.TypeOf((*Plan)(nil)).Elem()
-	preHookType    = reflect.TypeOf((*Pre)(nil)).Elem()
-	postHookType   = reflect.TypeOf((*Post)(nil)).Elem()
-	resultType     = reflect.TypeOf(Result{})
-	syncResultType = reflect.TypeOf(SyncResult{})
+	planType           = reflect.TypeOf((*Plan)(nil)).Elem()
+	preHookType        = reflect.TypeOf((*Pre)(nil)).Elem()
+	postHookType       = reflect.TypeOf((*Post)(nil)).Elem()
+	sideEffectType     = reflect.TypeOf(SideEffect{})
+	syncSideEffectType = reflect.TypeOf(SyncSideEffect{})
+	resultType         = reflect.TypeOf(Result{})
+	syncResultType     = reflect.TypeOf(SyncResult{})
 )
 
 type parsedComponent struct {
@@ -65,12 +67,20 @@ func (e Engine) RegisterSwitchComputer(v any, c SwitchComputer) {
 
 // TODO: use tags to connect hooks
 func (e Engine) ConnectPreHook(v any, hooks ...Pre) {
+	if !e.isComputerKey(v) {
+		panic(ErrProgrammaticHookOnlyAllowedForComputers.Err(reflect.TypeOf(v)))
+	}
+
 	componentID := extractFullNameFromValue(v)
 
 	e.preHooks[componentID] = append(e.preHooks[componentID], hooks...)
 }
 
 func (e Engine) ConnectPostHook(v any, hooks ...Post) {
+	if !e.isComputerKey(v) {
+		panic(ErrProgrammaticHookOnlyAllowedForComputers.Err(reflect.TypeOf(v)))
+	}
+
 	componentID := extractFullNameFromValue(v)
 
 	e.postHooks[componentID] = append(e.postHooks[componentID], hooks...)
@@ -79,7 +89,7 @@ func (e Engine) ConnectPostHook(v any, hooks ...Post) {
 func (e Engine) AnalyzePlan(p Plan) string {
 	val := reflect.ValueOf(p)
 	if val.Kind() != reflect.Pointer {
-		panic(ErrPlanMustUsePointerReceiver)
+		panic(ErrPlanMustUsePointerReceiver.Err(reflect.TypeOf(p)))
 	}
 
 	val = val.Elem()
@@ -211,7 +221,7 @@ func (e Engine) postExecute(componentID string, p MasterPlan) error {
 }
 
 func (e Engine) doExecutePlan(ctx context.Context, planName string, p MasterPlan, curPlanValue reflect.Value, isSequential bool) error {
-	ap := e.findAnalyzedPlan(planName)
+	ap := e.findAnalyzedPlan(planName, curPlanValue)
 
 	if err := e.preExecute(planName, p); err != nil {
 		return err
@@ -389,11 +399,22 @@ func (e Engine) findExistingPlanOrCreate(planName string) analyzedPlan {
 	return analyzedPlan{}
 }
 
-func (e Engine) findAnalyzedPlan(planName string) analyzedPlan {
+func (e Engine) findAnalyzedPlan(planName string, curPlanValue reflect.Value) analyzedPlan {
+	if len(planName) == 0 {
+		panic(ErrPlanNotAnalyzed.Err(curPlanValue.Type()))
+	}
+
 	ap, ok := e.plans[planName]
 	if !ok || len(ap.components) == 0 {
-		panic(ErrPlanNotAnalyzed)
+		panic(ErrPlanNotAnalyzed.Err(planName))
 	}
 
 	return ap
+}
+
+func (e Engine) isComputerKey(v any) bool {
+	return reflect.TypeOf(v).ConvertibleTo(sideEffectType) ||
+		reflect.TypeOf(v).ConvertibleTo(syncSideEffectType) ||
+		reflect.TypeOf(v).ConvertibleTo(resultType) ||
+		reflect.TypeOf(v).ConvertibleTo(syncResultType)
 }
