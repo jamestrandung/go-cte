@@ -9,24 +9,24 @@ import (
 )
 
 type SequentialPlan struct {
-	Input
-	Dependencies
-	loading.ParallelPlan
-	quote.CalculatedCost
-	streaming.CostStreaming
+    Input
+    Dependencies
+    loading.ParallelPlan
+    quote.FixedCostBranch
+    streaming.CostStreaming
 }
 
 func NewPlan(r Input, d Dependencies) *SequentialPlan {
-	return &SequentialPlan{
-		Input:        r,
-		Dependencies: d,
-	}
+    return &SequentialPlan{
+        Input:        r,
+        Dependencies: d,
+    }
 }
 
 func (p *SequentialPlan) IsSequential() bool {
-	return true
+    return true
 }
 
 func (p *SequentialPlan) Execute(ctx context.Context) error {
-	return config.Engine.ExecuteMasterPlan(ctx, planName, p)
+    return config.Engine.ExecuteMasterPlan(ctx, planName, p)
 }

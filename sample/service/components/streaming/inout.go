@@ -10,4 +10,4 @@ type Input interface {
 	GetTotalCost() float64
 }
 
-type CostStreaming cte.SideEffectKey
+type CostStreaming cte.SideEffect

@@ -39,7 +39,9 @@ func (bc bridgeComputer) Compute(ctx context.Context, p any) (any, error) {
 	}, err
 }
 
-type SideEffectKey struct{}
+type SideEffect struct{}
+
+type SyncSideEffect struct{}
 
 type Result struct {
 	Task async.Task[any]

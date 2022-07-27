@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	config.Engine.RegisterSwitchComputer(CalculatedCost{}, computer{})
+	config.Engine.RegisterSwitchComputer(FixedCostBranch{}, computer{})
 }
 
 type computer struct{}

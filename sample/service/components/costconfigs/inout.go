@@ -6,15 +6,11 @@ import (
 )
 
 type plan interface {
-	Input
+	Dependencies
 }
 
 type Dependencies interface {
 	GetConfigsFetcher() configsfetcher.Fetcher
-}
-
-type Input interface {
-	Dependencies
 }
 
 type CostConfigs cte.Result

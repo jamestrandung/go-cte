@@ -16,4 +16,4 @@ type Output interface {
 	SetTotalCost(float64)
 }
 
-type PlatformFee cte.SideEffectKey
+type PlatformFee cte.SyncSideEffect
