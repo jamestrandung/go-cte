@@ -1,8 +1,6 @@
 package calculation
 
-import (
-	"github.com/jamestrandung/go-cte/sample/config"
-)
+import "github.com/jamestrandung/go-cte/sample/config"
 
 var planName string
 

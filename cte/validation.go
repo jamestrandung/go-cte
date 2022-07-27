@@ -22,7 +22,7 @@ func (e Engine) IsRegistered(v any) bool {
 func (e Engine) IsExecutable(p MasterPlan) (err error) {
 	var verifyFn func(planName string)
 	verifyFn = func(planName string) {
-		ap := e.findAnalyzedPlan(planName)
+		ap := e.findAnalyzedPlan(planName, reflect.ValueOf(p))
 
 		for _, component := range ap.components {
 			func() {

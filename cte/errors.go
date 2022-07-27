@@ -1,6 +1,23 @@
 package cte
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
+
+type formatErr struct {
+	format string
+}
+
+func makeFormatErr(format string) formatErr {
+	return formatErr{
+		format: format,
+	}
+}
+
+func (e formatErr) Err(v ...any) error {
+	return fmt.Errorf(e.format, v...)
+}
 
 var (
 	// ErrPlanExecutionEndingEarly can be thrown actively by clients to end plan execution early.
@@ -18,6 +35,8 @@ var (
 	//
 	// Note: If the ending plan is nested inside another plan, the outer plan will also end.
 	ErrRootPlanExecutionEndingEarly = errors.New("plan execution ending early from root")
-	ErrPlanNotAnalyzed              = errors.New("plan must be analyzed before getting executed")
-	ErrPlanMustUsePointerReceiver   = errors.New("the passed in plan must be a pointer")
+
+	ErrPlanMustUsePointerReceiver              = makeFormatErr("%v is using value receiver, all plans must be implemented using pointer receiver")
+	ErrPlanNotAnalyzed                         = makeFormatErr("%v has not been analyzed yet, call AnalyzePlan on it first")
+	ErrProgrammaticHookOnlyAllowedForComputers = makeFormatErr("hooks can only be programmatically connected to computers, %v is not a computer key")
 )
