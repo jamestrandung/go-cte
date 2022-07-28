@@ -2,6 +2,7 @@ package travelplan
 
 import (
 	"context"
+	"github.com/jamestrandung/go-cte/cte"
 
 	"github.com/jamestrandung/go-cte/sample/dependencies/mapservice"
 
@@ -14,7 +15,7 @@ func init() {
 
 type computer struct{}
 
-func (c computer) Compute(ctx context.Context, p any) (any, error) {
+func (c computer) Compute(ctx context.Context, p cte.MasterPlan) (any, error) {
 	casted := p.(plan)
 
 	route, err := casted.GetMapService().GetRoute(casted.GetPointA(), casted.GetPointB())

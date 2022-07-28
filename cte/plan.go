@@ -14,9 +14,9 @@ type MasterPlan interface {
 }
 
 type Pre interface {
-	PreExecute(p any) error
+	PreExecute(p Plan) error
 }
 
 type Post interface {
-	PostExecute(p any) error
+	PostExecute(p Plan) error
 }

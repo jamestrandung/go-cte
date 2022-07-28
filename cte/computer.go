@@ -7,15 +7,15 @@ import (
 )
 
 type ImpureComputer interface {
-	Compute(ctx context.Context, p any) (any, error)
+	Compute(ctx context.Context, p MasterPlan) (any, error)
 }
 
 type SideEffectComputer interface {
-	Compute(ctx context.Context, p any) error
+	Compute(ctx context.Context, p MasterPlan) error
 }
 
 type SwitchComputer interface {
-	Switch(ctx context.Context, p any) (MasterPlan, error)
+	Switch(ctx context.Context, p MasterPlan) (MasterPlan, error)
 }
 
 type toExecutePlan struct {
@@ -27,7 +27,7 @@ type bridgeComputer struct {
 	sw SwitchComputer
 }
 
-func (bc bridgeComputer) Compute(ctx context.Context, p any) (any, error) {
+func (bc bridgeComputer) Compute(ctx context.Context, p MasterPlan) (any, error) {
 	if bc.se != nil {
 		return struct{}{}, bc.se.Compute(ctx, p)
 	}

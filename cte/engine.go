@@ -203,7 +203,7 @@ func (e Engine) doExecutePlan(ctx context.Context, planName string, p MasterPlan
 	return nil
 }
 
-func (e Engine) doExecuteTask(ctx context.Context, c ImpureComputer, p MasterPlan) (any, error) {
+func (e Engine) doExecuteComputer(ctx context.Context, c ImpureComputer, p MasterPlan) (any, error) {
 	result, err := c.Compute(ctx, p)
 	if tep, ok := result.(toExecutePlan); ok {
 		if err != nil {
@@ -221,7 +221,7 @@ func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue re
 		if c, ok := e.computers[component.id]; ok {
 			task := async.NewTask(
 				func(taskCtx context.Context) (any, error) {
-					return e.doExecuteTask(taskCtx, c, p)
+					return e.doExecuteComputer(taskCtx, c, p)
 				},
 			)
 
@@ -283,7 +283,7 @@ func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue r
 		if c, ok := e.computers[componentID]; ok {
 			task := async.NewTask(
 				func(taskCtx context.Context) (any, error) {
-					return e.doExecuteTask(taskCtx, c, p)
+					return e.doExecuteComputer(taskCtx, c, p)
 				},
 			)
 

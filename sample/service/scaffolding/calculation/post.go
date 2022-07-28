@@ -1,6 +1,9 @@
 package calculation
 
-import "github.com/jamestrandung/go-cte/sample/config"
+import (
+	"github.com/jamestrandung/go-cte/cte"
+	"github.com/jamestrandung/go-cte/sample/config"
+)
 
 type post interface {
 	GetTotalCost() float64
@@ -8,7 +11,7 @@ type post interface {
 
 type postHook struct{}
 
-func (postHook) PostExecute(p any) error {
+func (postHook) PostExecute(p cte.Plan) error {
 	config.Print("After executing sequential plan")
 	casted := p.(post)
 
@@ -19,7 +22,7 @@ func (postHook) PostExecute(p any) error {
 
 type anotherPostHook struct{}
 
-func (anotherPostHook) PostExecute(p any) error {
+func (anotherPostHook) PostExecute(p cte.Plan) error {
 	config.Print("After sequential plan 2nd hook")
 
 	return nil

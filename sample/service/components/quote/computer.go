@@ -16,7 +16,7 @@ func init() {
 type computer struct{}
 
 // TODO: Due to pre execution can return nil, clients must take care of handling nil plan in getters
-func (c computer) Switch(ctx context.Context, p any) (cte.MasterPlan, error) {
+func (c computer) Switch(ctx context.Context, p cte.MasterPlan) (cte.MasterPlan, error) {
 	casted := p.(plan)
 
 	if casted.GetIsFixedCostEnabled() {

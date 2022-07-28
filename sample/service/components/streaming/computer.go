@@ -2,6 +2,7 @@ package streaming
 
 import (
 	"context"
+	"github.com/jamestrandung/go-cte/cte"
 	"github.com/jamestrandung/go-cte/sample/config"
 )
 
@@ -11,7 +12,7 @@ func init() {
 
 type computer struct{}
 
-func (c computer) Compute(ctx context.Context, p any) error {
+func (c computer) Compute(ctx context.Context, p cte.MasterPlan) error {
 	casted := p.(plan)
 
 	c.stream(casted)

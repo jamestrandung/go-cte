@@ -2,6 +2,7 @@ package costconfigs
 
 import (
 	"context"
+	"github.com/jamestrandung/go-cte/cte"
 
 	"github.com/jamestrandung/go-cte/sample/dependencies/configsfetcher"
 
@@ -14,7 +15,7 @@ func init() {
 
 type computer struct{}
 
-func (c computer) Compute(ctx context.Context, p any) (any, error) {
+func (c computer) Compute(ctx context.Context, p cte.MasterPlan) (any, error) {
 	casted := p.(plan)
 
 	return c.doFetch(casted), nil

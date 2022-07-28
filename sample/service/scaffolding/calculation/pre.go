@@ -1,6 +1,9 @@
 package calculation
 
-import "github.com/jamestrandung/go-cte/sample/config"
+import (
+	"github.com/jamestrandung/go-cte/cte"
+	"github.com/jamestrandung/go-cte/sample/config"
+)
 
 type pre interface {
 	preIn
@@ -17,7 +20,7 @@ type preOut interface {
 
 type preHook struct{}
 
-func (preHook) PreExecute(p any) error {
+func (preHook) PreExecute(p cte.Plan) error {
 	config.Print("Before executing sequential plan")
 	casted := p.(pre)
 
