@@ -36,7 +36,6 @@ var (
 	// Note: If the ending plan is nested inside another plan, the outer plan will also end.
 	ErrRootPlanExecutionEndingEarly = errors.New("plan execution ending early from root")
 
-	ErrPlanMustUsePointerReceiver              = makeFormatErr("%v is using value receiver, all plans must be implemented using pointer receiver")
-	ErrPlanNotAnalyzed                         = makeFormatErr("%v has not been analyzed yet, call AnalyzePlan on it first")
-	ErrProgrammaticHookOnlyAllowedForComputers = makeFormatErr("hooks can only be programmatically connected to computers, %v is not a computer key")
+	ErrPlanMustUsePointerReceiver = makeFormatErr("%v is using value receiver, all plans must be implemented using pointer receiver")
+	ErrPlanNotAnalyzed            = makeFormatErr("%v has not been analyzed yet, call AnalyzePlan on it first")
 )
