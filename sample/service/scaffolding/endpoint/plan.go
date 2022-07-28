@@ -28,5 +28,5 @@ func (p *SequentialPlan) IsSequential() bool {
 }
 
 func (p *SequentialPlan) Execute(ctx context.Context) error {
-	return config.Engine.ExecuteMasterPlan(ctx, planName, p)
+	return config.Engine.ExecuteMasterPlan(ctx, p)
 }

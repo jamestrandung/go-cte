@@ -61,7 +61,7 @@ func (e Engine) RegisterSwitchComputer(v any, c SwitchComputer) {
 	}
 }
 
-func (e Engine) AnalyzePlan(p Plan) string {
+func (e Engine) AnalyzePlan(p Plan) {
 	val := reflect.ValueOf(p)
 	if val.Kind() != reflect.Pointer {
 		panic(ErrPlanMustUsePointerReceiver.Err(reflect.TypeOf(p)))
@@ -158,15 +158,14 @@ func (e Engine) AnalyzePlan(p Plan) string {
 		preHooks:     preHooks,
 		postHooks:    postHooks,
 	}
-
-	return planName
 }
 
-func (e Engine) ExecuteMasterPlan(ctx context.Context, planName string, p MasterPlan) error {
+func (e Engine) ExecuteMasterPlan(ctx context.Context, p MasterPlan) error {
 	// Plan implementations always use pointer receivers.
 	// Should be safe to extract value.
 	planValue := reflect.ValueOf(p).Elem()
 
+	planName := extractFullNameFromType(planValue.Type())
 	if err := e.doExecutePlan(ctx, planName, p, planValue, p.IsSequential()); err != nil {
 		return swallowErrPlanExecutionEndingEarly(err)
 	}

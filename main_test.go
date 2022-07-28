@@ -12,21 +12,21 @@ import (
 )
 
 func BenchmarkCustomPostHook_PostExecute(b *testing.B) {
-    server.Serve()
+	server.Serve()
 
-    p := endpoint.NewPlan(
-        dto.CostRequest{
-            PointA: "Clementi",
-            PointB: "Changi Airport",
-        },
-        server.Dependencies,
-    )
+	p := endpoint.NewPlan(
+		dto.CostRequest{
+			PointA: "Clementi",
+			PointB: "Changi Airport",
+		},
+		server.Dependencies,
+	)
 
-    b.ResetTimer()
+	b.ResetTimer()
 
-    for i := 0; i < b.N; i++ {
-        if err := p.Execute(context.Background()); err != nil {
-            config.Print(err)
-        }
-    }
+	for i := 0; i < b.N; i++ {
+		if err := p.Execute(context.Background()); err != nil {
+			config.Print(err)
+		}
+	}
 }
