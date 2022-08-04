@@ -38,4 +38,8 @@ var (
 
 	ErrPlanMustUsePointerReceiver = makeFormatErr("%v is using value receiver, all plans must be implemented using pointer receiver")
 	ErrPlanNotAnalyzed            = makeFormatErr("%v has not been analyzed yet, call AnalyzePlan on it first")
+
+	ErrInvalidComputerType = makeFormatErr("%v is not a computer")
+	ErrNilMetadata         = makeFormatErr("metadata is missing for %v")
+	ErrKeyMetaMissing      = makeFormatErr("key meta is missing for %v")
 )

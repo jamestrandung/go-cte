@@ -2,15 +2,23 @@ package streaming
 
 import (
 	"context"
+
 	"github.com/jamestrandung/go-cte/cte"
 	"github.com/jamestrandung/go-cte/sample/config"
 )
 
 func init() {
-	config.Engine.RegisterSideEffectComputer(CostStreaming{}, computer{})
+	config.Engine.RegisterComputer(computer{})
 }
 
 type computer struct{}
+
+func (c computer) Metadata() any {
+	return struct {
+		key   CostStreaming
+		inout plan
+	}{}
+}
 
 func (c computer) Compute(ctx context.Context, p cte.MasterPlan) error {
 	casted := p.(plan)

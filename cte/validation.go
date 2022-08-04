@@ -35,7 +35,7 @@ func (e Engine) IsExecutable(p MasterPlan) (err error) {
 
 				// If plan is not executable, one of the computers will panic
 				if c, ok := e.computers[component.id]; ok {
-					c.Compute(context.Background(), p)
+					c.computer.Compute(context.Background(), p)
 				}
 
 				if _, ok := e.plans[component.id]; ok {

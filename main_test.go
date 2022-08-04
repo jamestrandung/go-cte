@@ -1,14 +1,15 @@
 package main
 
 import (
-	"context"
-	"github.com/jamestrandung/go-cte/sample/service/scaffolding/endpoint"
-	"testing"
+    "context"
+    "testing"
 
-	"github.com/jamestrandung/go-cte/sample/dto"
+    "github.com/jamestrandung/go-cte/sample/service/scaffolding/endpoint"
 
-	"github.com/jamestrandung/go-cte/sample/config"
-	"github.com/jamestrandung/go-cte/sample/server"
+    "github.com/jamestrandung/go-cte/sample/dto"
+
+    "github.com/jamestrandung/go-cte/sample/config"
+    "github.com/jamestrandung/go-cte/sample/server"
 )
 
 func BenchmarkCustomPostHook_PostExecute(b *testing.B) {

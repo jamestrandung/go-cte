@@ -17,6 +17,11 @@ var (
 	syncResultType = reflect.TypeOf(SyncResult{})
 )
 
+type registeredComputer struct {
+	computer ImpureComputer
+	metadata map[metaType]reflect.Type
+}
+
 type parsedComponent struct {
 	id            string
 	fieldIdx      int
@@ -34,30 +39,47 @@ type analyzedPlan struct {
 }
 
 type Engine struct {
-	computers map[string]ImpureComputer
+	computers map[string]registeredComputer
 	plans     map[string]analyzedPlan
 }
 
 func NewEngine() Engine {
 	return Engine{
-		computers: make(map[string]ImpureComputer),
+		computers: make(map[string]registeredComputer),
 		plans:     make(map[string]analyzedPlan),
 	}
 }
 
-func (e Engine) RegisterImpureComputer(v any, c ImpureComputer) {
-	e.computers[extractFullNameFromValue(v)] = c
-}
+func (e Engine) RegisterComputer(mp MetadataProvider) {
+	metadata := extractMetadata(mp)
 
-func (e Engine) RegisterSideEffectComputer(v any, c SideEffectComputer) {
-	e.computers[extractFullNameFromValue(v)] = bridgeComputer{
-		se: c,
+	key, ok := metadata[metaTypeKey]
+	if !ok {
+		panic(ErrKeyMetaMissing.Err(reflect.TypeOf(mp)))
 	}
-}
 
-func (e Engine) RegisterSwitchComputer(v any, c SwitchComputer) {
-	e.computers[extractFullNameFromValue(v)] = bridgeComputer{
-		sw: c,
+	switch c := mp.(type) {
+	case ImpureComputer:
+		e.computers[extractFullNameFromType(key)] = registeredComputer{
+			computer: c,
+			metadata: metadata,
+		}
+	case SideEffectComputer:
+		e.computers[extractFullNameFromType(key)] = registeredComputer{
+			computer: bridgeComputer{
+				se: c,
+			},
+			metadata: metadata,
+		}
+	case SwitchComputer:
+		e.computers[extractFullNameFromType(key)] = registeredComputer{
+			computer: bridgeComputer{
+				sw: c,
+			},
+			metadata: metadata,
+		}
+	default:
+		panic(ErrInvalidComputerType.Err(reflect.TypeOf(mp)))
 	}
 }
 
@@ -221,7 +243,7 @@ func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue re
 		if c, ok := e.computers[component.id]; ok {
 			task := async.NewTask(
 				func(taskCtx context.Context) (any, error) {
-					return e.doExecuteComputer(taskCtx, c, p)
+					return e.doExecuteComputer(taskCtx, c.computer, p)
 				},
 			)
 
@@ -283,7 +305,7 @@ func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue r
 		if c, ok := e.computers[componentID]; ok {
 			task := async.NewTask(
 				func(taskCtx context.Context) (any, error) {
-					return e.doExecuteComputer(taskCtx, c, p)
+					return e.doExecuteComputer(taskCtx, c.computer, p)
 				},
 			)
 

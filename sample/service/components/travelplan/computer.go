@@ -2,6 +2,7 @@ package travelplan
 
 import (
 	"context"
+
 	"github.com/jamestrandung/go-cte/cte"
 
 	"github.com/jamestrandung/go-cte/sample/dependencies/mapservice"
@@ -10,10 +11,17 @@ import (
 )
 
 func init() {
-	config.Engine.RegisterImpureComputer(TravelPlan{}, computer{})
+	config.Engine.RegisterComputer(computer{})
 }
 
 type computer struct{}
+
+func (c computer) Metadata() any {
+	return struct {
+		key   TravelPlan
+		inout plan
+	}{}
+}
 
 func (c computer) Compute(ctx context.Context, p cte.MasterPlan) (any, error) {
 	casted := p.(plan)

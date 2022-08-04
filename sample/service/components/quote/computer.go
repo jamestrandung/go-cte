@@ -10,10 +10,17 @@ import (
 )
 
 func init() {
-	config.Engine.RegisterSwitchComputer(FixedCostBranch{}, computer{})
+	config.Engine.RegisterComputer(computer{})
 }
 
 type computer struct{}
+
+func (c computer) Metadata() any {
+	return struct {
+		key   FixedCostBranch
+		inout plan
+	}{}
+}
 
 // TODO: Due to pre execution can return nil, clients must take care of handling nil plan in getters
 func (c computer) Switch(ctx context.Context, p cte.MasterPlan) (cte.MasterPlan, error) {

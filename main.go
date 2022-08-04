@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/jamestrandung/go-cte/sample/dto"
-	"github.com/jamestrandung/go-cte/sample/service/scaffolding/endpoint"
 	"go/ast"
 	"go/token"
 	"go/types"
+
+	"github.com/jamestrandung/go-cte/sample/dto"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/endpoint"
 
 	"github.com/jamestrandung/go-cte/sample/config"
 	"github.com/jamestrandung/go-cte/sample/server"
