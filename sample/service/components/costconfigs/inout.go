@@ -15,6 +15,13 @@ type Dependencies interface {
 
 type CostConfigs cte.Result
 
+func (c CostConfigs) CTEMetadata() any {
+	return struct {
+		computer computer
+		inout    plan
+	}{}
+}
+
 func (c CostConfigs) GetBaseCost() float64 {
 	result := cte.Outcome[configsfetcher.MergedCostConfigs](c.Task)
 	return result.BaseCost

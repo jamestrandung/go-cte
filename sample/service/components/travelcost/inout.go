@@ -18,6 +18,13 @@ type Input interface {
 
 type TravelCost cte.Result
 
+func (r TravelCost) CTEMetadata() any {
+	return struct {
+		computer Computer
+		inout    plan
+	}{}
+}
+
 func (r TravelCost) GetTravelCost() float64 {
 	result := cte.Outcome[float64](r.Task)
 	return result

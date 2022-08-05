@@ -23,6 +23,13 @@ type result interface {
 
 type FixedCostBranch cte.Result
 
+func (c FixedCostBranch) CTEMetadata() any {
+	return struct {
+		computer computer
+		inout    plan
+	}{}
+}
+
 func (c FixedCostBranch) GetTotalCost() float64 {
 	return cte.Outcome[result](c.Task).GetTotalCost()
 }

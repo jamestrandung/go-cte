@@ -11,3 +11,10 @@ type Input interface {
 }
 
 type CostStreaming cte.SideEffect
+
+func (c CostStreaming) CTEMetadata() any {
+	return struct {
+		computer computer
+		inout    plan
+	}{}
+}

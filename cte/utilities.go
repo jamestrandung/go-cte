@@ -36,3 +36,17 @@ func extractShortName(fullName string) string {
 	shortNameIdx := strings.LastIndex(fullName, "/")
 	return fullName[shortNameIdx+1:]
 }
+
+func extractTypes(field reflect.StructField) (isPointerType bool, valueType reflect.Type, pointerType reflect.Type) {
+	rawFieldType := field.Type
+	isPointerType = rawFieldType.Kind() == reflect.Pointer
+
+	valueType = rawFieldType
+	if isPointerType {
+		valueType = rawFieldType.Elem()
+	}
+
+	pointerType = reflect.PointerTo(valueType)
+
+	return
+}

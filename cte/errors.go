@@ -40,6 +40,6 @@ var (
 	ErrPlanNotAnalyzed            = makeFormatErr("%v has not been analyzed yet, call AnalyzePlan on it first")
 
 	ErrInvalidComputerType = makeFormatErr("%v is not a computer")
-	ErrNilMetadata         = makeFormatErr("metadata is missing for %v")
-	ErrKeyMetaMissing      = makeFormatErr("key meta is missing for %v")
+	ErrNilMetadata         = makeFormatErr("metadata is nil for %v")
+	ErrComputerMetaMissing = makeFormatErr("computer meta is missing in %v")
 )

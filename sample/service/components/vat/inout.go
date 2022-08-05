@@ -20,6 +20,13 @@ type Output interface {
 
 type VATAmount cte.SyncResult
 
+func (a VATAmount) CTEMetadata() any {
+	return struct {
+		computer computer
+		inout    plan
+	}{}
+}
+
 func (a VATAmount) GetVATAmount() float64 {
 	return cte.Cast[float64](a.Outcome)
 }

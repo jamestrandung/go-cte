@@ -21,6 +21,13 @@ type Input interface {
 
 type TravelPlan cte.Result
 
+func (p TravelPlan) CTEMetadata() any {
+	return struct {
+		computer computer
+		inout    plan
+	}{}
+}
+
 func (p TravelPlan) GetTravelDistance() float64 {
 	result := cte.Outcome[mapservice.Route](p.Task)
 	return result.Distance

@@ -8,19 +8,12 @@ import (
 
 type Computer struct{}
 
-func (c Computer) Metadata() any {
-    return struct {
-        key   TravelCost
-        inout plan
-    }{}
-}
-
 func (c Computer) Compute(ctx context.Context, p cte.MasterPlan) (any, error) {
-    casted := p.(plan)
+	casted := p.(plan)
 
-    return c.calculateTravelCost(casted), nil
+	return c.calculateTravelCost(casted), nil
 }
 
 func (Computer) calculateTravelCost(in Input) float64 {
-    return in.GetBaseCost() + in.GetTravelDuration()*in.GetCostPerMinute() + in.GetTravelDistance()*in.GetCostPerKilometer()
+	return in.GetBaseCost() + in.GetTravelDuration()*in.GetCostPerMinute() + in.GetTravelDistance()*in.GetCostPerKilometer()
 }

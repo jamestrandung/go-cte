@@ -10,11 +10,12 @@ import (
 )
 
 var (
-	planType       = reflect.TypeOf((*Plan)(nil)).Elem()
-	preHookType    = reflect.TypeOf((*Pre)(nil)).Elem()
-	postHookType   = reflect.TypeOf((*Post)(nil)).Elem()
-	resultType     = reflect.TypeOf(Result{})
-	syncResultType = reflect.TypeOf(SyncResult{})
+	planType             = reflect.TypeOf((*Plan)(nil)).Elem()
+	preHookType          = reflect.TypeOf((*Pre)(nil)).Elem()
+	postHookType         = reflect.TypeOf((*Post)(nil)).Elem()
+	metadataProviderType = reflect.TypeOf((*MetadataProvider)(nil)).Elem()
+	resultType           = reflect.TypeOf(Result{})
+	syncResultType       = reflect.TypeOf(SyncResult{})
 )
 
 type registeredComputer struct {
@@ -50,41 +51,6 @@ func NewEngine() Engine {
 	}
 }
 
-func (e Engine) RegisterComputers(metadataProviders ...MetadataProvider) {
-	for _, mp := range metadataProviders {
-		metadata := extractMetadata(mp)
-
-		key, ok := metadata[metaTypeKey]
-		if !ok {
-			panic(ErrKeyMetaMissing.Err(reflect.TypeOf(mp)))
-		}
-
-		switch c := mp.(type) {
-		case ImpureComputer:
-			e.computers[extractFullNameFromType(key)] = registeredComputer{
-				computer: c,
-				metadata: metadata,
-			}
-		case SideEffectComputer:
-			e.computers[extractFullNameFromType(key)] = registeredComputer{
-				computer: bridgeComputer{
-					se: c,
-				},
-				metadata: metadata,
-			}
-		case SwitchComputer:
-			e.computers[extractFullNameFromType(key)] = registeredComputer{
-				computer: bridgeComputer{
-					sw: c,
-				},
-				metadata: metadata,
-			}
-		default:
-			panic(ErrInvalidComputerType.Err(reflect.TypeOf(mp)))
-		}
-	}
-}
-
 func (e Engine) AnalyzePlan(p Plan) {
 	val := reflect.ValueOf(p)
 	if val.Kind() != reflect.Pointer {
@@ -98,45 +64,56 @@ func (e Engine) AnalyzePlan(p Plan) {
 	var components []parsedComponent
 
 	for i := 0; i < val.NumField(); i++ {
-		rawFieldType := val.Type().Field(i).Type
-		isPointerType := rawFieldType.Kind() == reflect.Pointer
+		isPointerType, fieldType, fieldPointerType := extractTypes(val.Type().Field(i))
 
-		fieldType := rawFieldType
-		if isPointerType {
-			fieldType = fieldType.Elem()
-		}
+		processedAsHook := func() bool {
+			// Hook types might be embedded in a parent plan struct. Hence, we need to check if the type
+			// is a hook but not a plan so that we don't register a plan as a hook.
+			typeAndPointerTypeIsNotPlanType := !fieldType.Implements(planType) && !fieldPointerType.Implements(planType)
 
-		fieldPointerType := reflect.PointerTo(fieldType)
+			// Hooks might be implemented with value or pointer receivers.
+			isPreHookType := fieldType.Implements(preHookType) || fieldPointerType.Implements(preHookType)
+			isPostHookType := fieldType.Implements(postHookType) || fieldPointerType.Implements(postHookType)
 
-		// Hook types might be embedded in a parent plan struct. Hence, we need to check if the type
-		// is a hook but not a plan so that we don't register a plan as a hook.
-		typeAndPointerTypeIsNotPlanType := !fieldType.Implements(planType) && !fieldPointerType.Implements(planType)
+			if typeAndPointerTypeIsNotPlanType && isPreHookType {
+				// Call to Interface() returns a pointer value which is acceptable for
+				// both scenarios where fieldType uses pointer or value receiver to
+				// implement an interface
+				preHook := reflect.New(fieldType).Interface().(Pre)
+				preHooks = append(preHooks, preHook)
 
-		// Hooks might be implemented with value or pointer receivers.
-		isPreHookType := fieldType.Implements(preHookType) || fieldPointerType.Implements(preHookType)
-		isPostHookType := fieldType.Implements(postHookType) || fieldPointerType.Implements(postHookType)
+				return true
+			}
 
-		if typeAndPointerTypeIsNotPlanType && isPreHookType {
-			// Call to Interface() returns a pointer value which is acceptable for
-			// both scenarios where fieldType uses pointer or value receiver to
-			// implement an interface
-			preHook := reflect.New(fieldType).Interface().(Pre)
-			preHooks = append(preHooks, preHook)
+			if typeAndPointerTypeIsNotPlanType && isPostHookType {
+				// Call to Interface() returns a pointer value which is acceptable for
+				// both scenarios where fieldType uses pointer or value receiver to
+				// implement an interface
+				postHook := reflect.New(fieldType).Interface().(Post)
+				postHooks = append(postHooks, postHook)
 
-			continue
-		}
+				return true
+			}
 
-		if typeAndPointerTypeIsNotPlanType && isPostHookType {
-			// Call to Interface() returns a pointer value which is acceptable for
-			// both scenarios where fieldType uses pointer or value receiver to
-			// implement an interface
-			postHook := reflect.New(fieldType).Interface().(Post)
-			postHooks = append(postHooks, postHook)
+			return false
+		}()
 
+		if processedAsHook {
 			continue
 		}
 
 		componentID := extractFullNameFromType(fieldType)
+
+		// Dynamically register computers that are actually used in a plan
+		func() {
+			isMetadataProviderType := fieldType.Implements(metadataProviderType) || fieldPointerType.Implements(metadataProviderType)
+			if !isMetadataProviderType {
+				return
+			}
+
+			mp := reflect.New(fieldType).Interface().(MetadataProvider)
+			e.registerComputer(mp)
+		}()
 
 		component := func() parsedComponent {
 			if fieldType.ConvertibleTo(resultType) {
@@ -181,6 +158,54 @@ func (e Engine) AnalyzePlan(p Plan) {
 		components:   components,
 		preHooks:     preHooks,
 		postHooks:    postHooks,
+	}
+}
+
+func (e Engine) registerComputer(mp MetadataProvider) {
+	computerID := extractFullNameFromValue(mp)
+	if _, ok := e.computers[computerID]; ok {
+		return
+	}
+
+	metadata := extractMetadata(mp)
+
+	computerType := func() reflect.Type {
+		cType, ok := metadata[metaTypeComputer]
+		if !ok {
+			panic(ErrComputerMetaMissing.Err(reflect.TypeOf(mp)))
+		}
+
+		if cType.Kind() == reflect.Pointer {
+			return cType.Elem()
+		}
+
+		return cType
+	}()
+
+	computer := reflect.New(computerType).Interface()
+
+	switch c := computer.(type) {
+	case ImpureComputer:
+		e.computers[computerID] = registeredComputer{
+			computer: c,
+			metadata: metadata,
+		}
+	case SideEffectComputer:
+		e.computers[computerID] = registeredComputer{
+			computer: bridgeComputer{
+				se: c,
+			},
+			metadata: metadata,
+		}
+	case SwitchComputer:
+		e.computers[computerID] = registeredComputer{
+			computer: bridgeComputer{
+				sw: c,
+			},
+			metadata: metadata,
+		}
+	default:
+		panic(ErrInvalidComputerType.Err(computerType))
 	}
 }
 

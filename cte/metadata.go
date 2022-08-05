@@ -7,18 +7,19 @@ import (
 type metaType string
 
 const (
-	metaTypeKey   metaType = "key"
-	metaTypeInout metaType = "inout"
+	metaTypeKey      metaType = "key"
+	metaTypeComputer metaType = "computer"
+	metaTypeInout    metaType = "inout"
 )
 
 type MetadataProvider interface {
-	Metadata() any
+	CTEMetadata() any
 }
 
 func extractMetadata(mp MetadataProvider) map[metaType]reflect.Type {
 	result := make(map[metaType]reflect.Type)
 
-	metadata := mp.Metadata()
+	metadata := mp.CTEMetadata()
 	if metadata == nil {
 		panic(ErrNilMetadata.Err(reflect.TypeOf(mp)))
 	}
