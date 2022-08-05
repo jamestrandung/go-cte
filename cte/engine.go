@@ -50,36 +50,43 @@ func NewEngine() Engine {
 	}
 }
 
-func (e Engine) RegisterComputer(mp MetadataProvider) {
-	metadata := extractMetadata(mp)
+func (e Engine) RegisterComputer(metadata any) {
+	parsedMetadata := parseMetadata(metadata)
 
-	key, ok := metadata[metaTypeKey]
+	key, ok := parsedMetadata[metaTypeKey]
 	if !ok {
-		panic(ErrKeyMetaMissing.Err(reflect.TypeOf(mp)))
+		panic(ErrKeyMetaMissing.Err(reflect.TypeOf(metadata)))
 	}
 
-	switch c := mp.(type) {
+	computerType, ok := parsedMetadata[metaTypeComputer]
+	if !ok {
+		panic(ErrComputerMetaMissing.Err(reflect.TypeOf(metadata)))
+	}
+
+	c := reflect.New(computerType).Interface()
+
+	switch casted := c.(type) {
 	case ImpureComputer:
 		e.computers[extractFullNameFromType(key)] = registeredComputer{
-			computer: c,
-			metadata: metadata,
+			computer: casted,
+			metadata: parsedMetadata,
 		}
 	case SideEffectComputer:
 		e.computers[extractFullNameFromType(key)] = registeredComputer{
 			computer: bridgeComputer{
-				se: c,
+				se: casted,
 			},
-			metadata: metadata,
+			metadata: parsedMetadata,
 		}
 	case SwitchComputer:
 		e.computers[extractFullNameFromType(key)] = registeredComputer{
 			computer: bridgeComputer{
-				sw: c,
+				sw: casted,
 			},
-			metadata: metadata,
+			metadata: parsedMetadata,
 		}
 	default:
-		panic(ErrInvalidComputerType.Err(reflect.TypeOf(mp)))
+		panic(ErrInvalidComputerType.Err(reflect.TypeOf(metadata)))
 	}
 }
 

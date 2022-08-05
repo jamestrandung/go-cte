@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	config.Engine.RegisterComputer(computer{})
+	config.Engine.RegisterComputer(Metadata{})
 }
 
 type computer struct{}
