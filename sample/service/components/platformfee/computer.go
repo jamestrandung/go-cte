@@ -4,31 +4,25 @@ import (
 	"context"
 
 	"github.com/jamestrandung/go-cte/cte"
-
-	"github.com/jamestrandung/go-cte/sample/config"
 )
 
-func init() {
-	config.Engine.RegisterComputer(computer{})
+type Computer struct{}
+
+func (c Computer) Metadata() any {
+    return struct {
+        key   PlatformFee
+        inout plan
+    }{}
 }
 
-type computer struct{}
+func (c Computer) Compute(ctx context.Context, p cte.MasterPlan) error {
+    casted := p.(plan)
 
-func (c computer) Metadata() any {
-	return struct {
-		key   PlatformFee
-		inout plan
-	}{}
+    c.addPlatformFee(casted)
+
+    return nil
 }
 
-func (c computer) Compute(ctx context.Context, p cte.MasterPlan) error {
-	casted := p.(plan)
-
-	c.addPlatformFee(casted)
-
-	return nil
-}
-
-func (computer) addPlatformFee(p plan) {
-	p.SetTotalCost(p.GetTotalCost() + p.GetPlatformFee())
+func (Computer) addPlatformFee(p plan) {
+    p.SetTotalCost(p.GetTotalCost() + p.GetPlatformFee())
 }

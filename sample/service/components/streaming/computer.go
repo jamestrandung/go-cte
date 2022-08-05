@@ -7,20 +7,16 @@ import (
 	"github.com/jamestrandung/go-cte/sample/config"
 )
 
-func init() {
-	config.Engine.RegisterComputer(computer{})
-}
+type Computer struct{}
 
-type computer struct{}
-
-func (c computer) Metadata() any {
+func (c Computer) Metadata() any {
 	return struct {
 		key   CostStreaming
 		inout plan
 	}{}
 }
 
-func (c computer) Compute(ctx context.Context, p cte.MasterPlan) error {
+func (c Computer) Compute(ctx context.Context, p cte.MasterPlan) error {
 	casted := p.(plan)
 
 	c.stream(casted)
@@ -28,6 +24,6 @@ func (c computer) Compute(ctx context.Context, p cte.MasterPlan) error {
 	return nil
 }
 
-func (computer) stream(p plan) {
+func (Computer) stream(p plan) {
 	config.Print("Streaming calculated cost:", p.GetTotalCost())
 }

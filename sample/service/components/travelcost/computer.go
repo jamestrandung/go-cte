@@ -4,29 +4,23 @@ import (
 	"context"
 
 	"github.com/jamestrandung/go-cte/cte"
-
-	"github.com/jamestrandung/go-cte/sample/config"
 )
 
-func init() {
-	config.Engine.RegisterComputer(computer{})
+type Computer struct{}
+
+func (c Computer) Metadata() any {
+    return struct {
+        key   TravelCost
+        inout plan
+    }{}
 }
 
-type computer struct{}
+func (c Computer) Compute(ctx context.Context, p cte.MasterPlan) (any, error) {
+    casted := p.(plan)
 
-func (c computer) Metadata() any {
-	return struct {
-		key   TravelCost
-		inout plan
-	}{}
+    return c.calculateTravelCost(casted), nil
 }
 
-func (c computer) Compute(ctx context.Context, p cte.MasterPlan) (any, error) {
-	casted := p.(plan)
-
-	return c.calculateTravelCost(casted), nil
-}
-
-func (computer) calculateTravelCost(in Input) float64 {
-	return in.GetBaseCost() + in.GetTravelDuration()*in.GetCostPerMinute() + in.GetTravelDistance()*in.GetCostPerKilometer()
+func (Computer) calculateTravelCost(in Input) float64 {
+    return in.GetBaseCost() + in.GetTravelDuration()*in.GetCostPerMinute() + in.GetTravelDistance()*in.GetCostPerKilometer()
 }

@@ -4,31 +4,26 @@ import (
 	"context"
 
 	"github.com/jamestrandung/go-cte/cte"
-	"github.com/jamestrandung/go-cte/sample/config"
 	"github.com/jamestrandung/go-cte/sample/service/scaffolding/calculation"
 	"github.com/jamestrandung/go-cte/sample/service/scaffolding/fixedcost"
 )
 
-func init() {
-	config.Engine.RegisterComputer(computer{})
-}
+type Computer struct{}
 
-type computer struct{}
-
-func (c computer) Metadata() any {
-	return struct {
-		key   FixedCostBranch
-		inout plan
-	}{}
+func (c Computer) Metadata() any {
+    return struct {
+        key   FixedCostBranch
+        inout plan
+    }{}
 }
 
 // TODO: Due to pre execution can return nil, clients must take care of handling nil plan in getters
-func (c computer) Switch(ctx context.Context, p cte.MasterPlan) (cte.MasterPlan, error) {
-	casted := p.(plan)
+func (c Computer) Switch(ctx context.Context, p cte.MasterPlan) (cte.MasterPlan, error) {
+    casted := p.(plan)
 
-	if casted.GetIsFixedCostEnabled() {
-		return fixedcost.NewPlan(casted), nil
-	}
+    if casted.GetIsFixedCostEnabled() {
+        return fixedcost.NewPlan(casted), nil
+    }
 
-	return calculation.NewPlan(casted), nil
+    return calculation.NewPlan(casted), nil
 }

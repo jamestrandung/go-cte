@@ -10,20 +10,16 @@ import (
 	"github.com/jamestrandung/go-cte/sample/config"
 )
 
-func init() {
-	config.Engine.RegisterComputer(computer{})
-}
+type Computer struct{}
 
-type computer struct{}
-
-func (c computer) Metadata() any {
+func (c Computer) Metadata() any {
 	return struct {
 		key   TravelPlan
 		inout plan
 	}{}
 }
 
-func (c computer) Compute(ctx context.Context, p cte.MasterPlan) (any, error) {
+func (c Computer) Compute(ctx context.Context, p cte.MasterPlan) (any, error) {
 	casted := p.(plan)
 
 	route, err := casted.GetMapService().GetRoute(casted.GetPointA(), casted.GetPointB())
@@ -34,7 +30,7 @@ func (c computer) Compute(ctx context.Context, p cte.MasterPlan) (any, error) {
 	return route, nil
 }
 
-func (c computer) calculateStraightLineDistance(p plan) mapservice.Route {
+func (c Computer) calculateStraightLineDistance(p plan) mapservice.Route {
 	config.Printf("Building route from %s to %s using straight-line distance\n", p.GetPointA(), p.GetPointB())
 	return mapservice.Route{
 		Distance: 4,
