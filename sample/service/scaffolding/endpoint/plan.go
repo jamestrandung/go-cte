@@ -1,12 +1,12 @@
 package endpoint
 
 import (
-    "context"
+	"context"
 
-    "github.com/jamestrandung/go-cte/sample/config"
-    "github.com/jamestrandung/go-cte/sample/service/components/quote"
-    "github.com/jamestrandung/go-cte/sample/service/components/streaming"
-    "github.com/jamestrandung/go-cte/sample/service/scaffolding/loading"
+	"github.com/jamestrandung/go-cte/sample/config"
+	"github.com/jamestrandung/go-cte/sample/service/components/quote"
+	"github.com/jamestrandung/go-cte/sample/service/components/streaming"
+	"github.com/jamestrandung/go-cte/sample/service/scaffolding/loading"
 )
 
 type SequentialPlan struct {
@@ -24,7 +24,7 @@ func NewPlan(r Input, d Dependencies) *SequentialPlan {
 	}
 }
 
-func (p *SequentialPlan) IsSequential() bool {
+func (p *SequentialPlan) IsSequentialCTEPlan() bool {
 	return true
 }
 

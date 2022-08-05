@@ -52,6 +52,11 @@ func NewEngine() Engine {
 }
 
 func (e Engine) AnalyzePlan(p Plan) {
+	planName := extractFullNameFromValue(p)
+	if _, ok := e.plans[planName]; ok {
+		return
+	}
+
 	val := reflect.ValueOf(p)
 	if val.Kind() != reflect.Pointer {
 		panic(ErrPlanMustUsePointerReceiver.Err(reflect.TypeOf(p)))
@@ -115,6 +120,21 @@ func (e Engine) AnalyzePlan(p Plan) {
 			e.registerComputer(mp)
 		}()
 
+		// Dynamically analyze nested plans
+		func() {
+			isPlanType := fieldPointerType.Implements(planType)
+
+			if !isPlanType {
+				return
+			}
+
+			if isPointerType {
+				panic(ErrNestedPlanCannotBePointer.Err(val.Type(), fieldType))
+			}
+
+			e.AnalyzePlan(reflect.New(fieldType).Interface().(Plan))
+		}()
+
 		component := func() parsedComponent {
 			if fieldType.ConvertibleTo(resultType) {
 				// Both sequential & parallel plans can contain Result fields
@@ -128,7 +148,7 @@ func (e Engine) AnalyzePlan(p Plan) {
 			}
 
 			if fieldType.ConvertibleTo(syncResultType) {
-				if !p.IsSequential() {
+				if !p.IsSequentialCTEPlan() {
 					panic(fmt.Errorf("parallel plan cannot contain SyncResult field: %s", extractShortName(componentID)))
 				}
 
@@ -151,10 +171,8 @@ func (e Engine) AnalyzePlan(p Plan) {
 		components = append(components, component)
 	}
 
-	planName := extractFullNameFromValue(p)
-
 	e.plans[planName] = analyzedPlan{
-		isSequential: p.IsSequential(),
+		isSequential: p.IsSequentialCTEPlan(),
 		components:   components,
 		preHooks:     preHooks,
 		postHooks:    postHooks,
@@ -215,7 +233,7 @@ func (e Engine) ExecuteMasterPlan(ctx context.Context, p MasterPlan) error {
 	planValue := reflect.ValueOf(p).Elem()
 
 	planName := extractFullNameFromType(planValue.Type())
-	if err := e.doExecutePlan(ctx, planName, p, planValue, p.IsSequential()); err != nil {
+	if err := e.doExecutePlan(ctx, planName, p, planValue, p.IsSequentialCTEPlan()); err != nil {
 		return swallowErrPlanExecutionEndingEarly(err)
 	}
 

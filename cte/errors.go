@@ -38,6 +38,7 @@ var (
 
 	ErrPlanMustUsePointerReceiver = makeFormatErr("%v is using value receiver, all plans must be implemented using pointer receiver")
 	ErrPlanNotAnalyzed            = makeFormatErr("%v has not been analyzed yet, call AnalyzePlan on it first")
+	ErrNestedPlanCannotBePointer  = makeFormatErr("%v has a nested plan called %v that is a pointer")
 
 	ErrInvalidComputerType = makeFormatErr("%v is not a computer")
 	ErrNilMetadata         = makeFormatErr("metadata is nil for %v")

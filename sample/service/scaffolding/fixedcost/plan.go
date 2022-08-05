@@ -19,7 +19,7 @@ func NewPlan(in Input) *SequentialPlan {
 	}
 }
 
-func (p *SequentialPlan) IsSequential() bool {
+func (p *SequentialPlan) IsSequentialCTEPlan() bool {
 	return true
 }
 

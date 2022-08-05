@@ -12,6 +12,6 @@ type ParallelPlan struct {
 	travelcost.TravelCost
 }
 
-func (p *ParallelPlan) IsSequential() bool {
+func (p *ParallelPlan) IsSequentialCTEPlan() bool {
 	return false
 }

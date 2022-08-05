@@ -5,7 +5,7 @@ import (
 )
 
 type Plan interface {
-	IsSequential() bool
+	IsSequentialCTEPlan() bool
 }
 
 type MasterPlan interface {
