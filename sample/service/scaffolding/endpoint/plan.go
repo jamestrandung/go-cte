@@ -2,7 +2,6 @@ package endpoint
 
 import (
 	"context"
-
 	"github.com/jamestrandung/go-cte/sample/config"
 	"github.com/jamestrandung/go-cte/sample/service/components/quote"
 	"github.com/jamestrandung/go-cte/sample/service/components/streaming"

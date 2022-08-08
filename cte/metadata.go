@@ -7,16 +7,16 @@ import (
 type metaType string
 
 const (
-	metaTypeKey      metaType = "key"
-	metaTypeComputer metaType = "computer"
-	metaTypeInout    metaType = "inout"
+	metaTypeComputerKey metaType = "key"
+	metaTypeComputer    metaType = "computer"
+	metaTypeInout       metaType = "inout"
 )
 
 type MetadataProvider interface {
 	CTEMetadata() any
 }
 
-func extractMetadata(mp MetadataProvider) map[metaType]reflect.Type {
+func extractMetadata(mp MetadataProvider, isComputerKey bool) parsedMetadata {
 	result := make(map[metaType]reflect.Type)
 
 	metadata := mp.CTEMetadata()
@@ -35,5 +35,26 @@ func extractMetadata(mp MetadataProvider) map[metaType]reflect.Type {
 		result[metaType(field.Name)] = field.Type
 	}
 
+	if isComputerKey {
+		result[metaTypeComputerKey] = reflect.TypeOf(mp)
+	}
+
 	return result
+}
+
+type parsedMetadata map[metaType]reflect.Type
+
+func (pm parsedMetadata) getComputerKeyType() (reflect.Type, bool) {
+	result, ok := pm[metaTypeComputerKey]
+	return result, ok
+}
+
+func (pm parsedMetadata) getComputerType() (reflect.Type, bool) {
+	result, ok := pm[metaTypeComputer]
+	return result, ok
+}
+
+func (pm parsedMetadata) getInoutInterface() (reflect.Type, bool) {
+	result, ok := pm[metaTypeInout]
+	return result, ok
 }

@@ -2,7 +2,6 @@ package quote
 
 import (
 	"context"
-
 	"github.com/jamestrandung/go-cte/cte"
 	"github.com/jamestrandung/go-cte/sample/service/scaffolding/calculation"
 	"github.com/jamestrandung/go-cte/sample/service/scaffolding/fixedcost"

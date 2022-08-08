@@ -20,6 +20,12 @@ type preOut interface {
 
 type preHook struct{}
 
+func (preHook) CTEMetadata() any {
+	return struct {
+		inout pre
+	}{}
+}
+
 func (preHook) PreExecute(p cte.Plan) error {
 	config.Print("Before executing sequential plan")
 	casted := p.(pre)

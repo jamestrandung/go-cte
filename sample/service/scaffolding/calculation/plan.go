@@ -2,10 +2,10 @@ package calculation
 
 import (
 	"context"
+	"github.com/jamestrandung/go-cte/sample/service/components/vat"
 
 	"github.com/jamestrandung/go-cte/sample/config"
 	"github.com/jamestrandung/go-cte/sample/service/components/platformfee"
-	"github.com/jamestrandung/go-cte/sample/service/components/vat"
 )
 
 type SequentialPlan struct {
@@ -15,7 +15,6 @@ type SequentialPlan struct {
 	platformfee.PlatformFee
 	vat.VATAmount
 	postHook
-	anotherPostHook
 }
 
 func NewPlan(in Input) *SequentialPlan {

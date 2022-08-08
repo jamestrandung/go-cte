@@ -2,41 +2,15 @@ package cte
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
 	"github.com/jamestrandung/go-concurrency/async"
 	"golang.org/x/sync/errgroup"
 )
 
-var (
-	planType             = reflect.TypeOf((*Plan)(nil)).Elem()
-	preHookType          = reflect.TypeOf((*Pre)(nil)).Elem()
-	postHookType         = reflect.TypeOf((*Post)(nil)).Elem()
-	metadataProviderType = reflect.TypeOf((*MetadataProvider)(nil)).Elem()
-	resultType           = reflect.TypeOf(Result{})
-	syncResultType       = reflect.TypeOf(SyncResult{})
-)
-
 type registeredComputer struct {
 	computer ImpureComputer
-	metadata map[metaType]reflect.Type
-}
-
-type parsedComponent struct {
-	id            string
-	fieldIdx      int
-	fieldType     reflect.Type
-	isSyncResult  bool
-	requireSet    bool
-	isPointerType bool
-}
-
-type analyzedPlan struct {
-	isSequential bool
-	components   []parsedComponent
-	preHooks     []Pre
-	postHooks    []Post
+	metadata parsedMetadata
 }
 
 type Engine struct {
@@ -62,121 +36,15 @@ func (e Engine) AnalyzePlan(p Plan) {
 		panic(ErrPlanMustUsePointerReceiver.Err(reflect.TypeOf(p)))
 	}
 
-	val = val.Elem()
-
-	var preHooks []Pre
-	var postHooks []Post
-	var components []parsedComponent
-
-	for i := 0; i < val.NumField(); i++ {
-		isPointerType, fieldType, fieldPointerType := extractTypes(val.Type().Field(i))
-
-		processedAsHook := func() bool {
-			// Hook types might be embedded in a parent plan struct. Hence, we need to check if the type
-			// is a hook but not a plan so that we don't register a plan as a hook.
-			typeAndPointerTypeIsNotPlanType := !fieldType.Implements(planType) && !fieldPointerType.Implements(planType)
-
-			// Hooks might be implemented with value or pointer receivers.
-			isPreHookType := fieldType.Implements(preHookType) || fieldPointerType.Implements(preHookType)
-			isPostHookType := fieldType.Implements(postHookType) || fieldPointerType.Implements(postHookType)
-
-			if typeAndPointerTypeIsNotPlanType && isPreHookType {
-				// Call to Interface() returns a pointer value which is acceptable for
-				// both scenarios where fieldType uses pointer or value receiver to
-				// implement an interface
-				preHook := reflect.New(fieldType).Interface().(Pre)
-				preHooks = append(preHooks, preHook)
-
-				return true
-			}
-
-			if typeAndPointerTypeIsNotPlanType && isPostHookType {
-				// Call to Interface() returns a pointer value which is acceptable for
-				// both scenarios where fieldType uses pointer or value receiver to
-				// implement an interface
-				postHook := reflect.New(fieldType).Interface().(Post)
-				postHooks = append(postHooks, postHook)
-
-				return true
-			}
-
-			return false
-		}()
-
-		if processedAsHook {
-			continue
-		}
-
-		componentID := extractFullNameFromType(fieldType)
-
-		// Dynamically register computers that are actually used in a plan
-		func() {
-			isMetadataProviderType := fieldType.Implements(metadataProviderType) || fieldPointerType.Implements(metadataProviderType)
-			if !isMetadataProviderType {
-				return
-			}
-
-			mp := reflect.New(fieldType).Interface().(MetadataProvider)
-			e.registerComputer(mp)
-		}()
-
-		// Dynamically analyze nested plans
-		func() {
-			isPlanType := fieldPointerType.Implements(planType)
-
-			if !isPlanType {
-				return
-			}
-
-			if isPointerType {
-				panic(ErrNestedPlanCannotBePointer.Err(val.Type(), fieldType))
-			}
-
-			e.AnalyzePlan(reflect.New(fieldType).Interface().(Plan))
-		}()
-
-		component := func() parsedComponent {
-			if fieldType.ConvertibleTo(resultType) {
-				// Both sequential & parallel plans can contain Result fields
-				return parsedComponent{
-					id:            componentID,
-					fieldIdx:      i,
-					fieldType:     fieldType,
-					requireSet:    true,
-					isPointerType: isPointerType,
-				}
-			}
-
-			if fieldType.ConvertibleTo(syncResultType) {
-				if !p.IsSequentialCTEPlan() {
-					panic(fmt.Errorf("parallel plan cannot contain SyncResult field: %s", extractShortName(componentID)))
-				}
-
-				return parsedComponent{
-					id:            componentID,
-					fieldIdx:      i,
-					fieldType:     fieldType,
-					isSyncResult:  true,
-					requireSet:    true,
-					isPointerType: isPointerType,
-				}
-			}
-
-			return parsedComponent{
-				id:       componentID,
-				fieldIdx: i,
-			}
-		}()
-
-		components = append(components, component)
+	pa := planAnalyzer{
+		engine:    e,
+		plan:      p,
+		planValue: val.Elem(),
 	}
 
-	e.plans[planName] = analyzedPlan{
-		isSequential: p.IsSequentialCTEPlan(),
-		components:   components,
-		preHooks:     preHooks,
-		postHooks:    postHooks,
-	}
+	ap := pa.analyze()
+
+	e.plans[planName] = ap
 }
 
 func (e Engine) registerComputer(mp MetadataProvider) {
@@ -185,10 +53,10 @@ func (e Engine) registerComputer(mp MetadataProvider) {
 		return
 	}
 
-	metadata := extractMetadata(mp)
+	metadata := extractMetadata(mp, true)
 
 	computerType := func() reflect.Type {
-		cType, ok := metadata[metaTypeComputer]
+		cType, ok := metadata.getComputerType()
 		if !ok {
 			panic(ErrComputerMetaMissing.Err(reflect.TypeOf(mp)))
 		}
@@ -244,7 +112,7 @@ func (e Engine) doExecutePlan(ctx context.Context, planName string, p MasterPlan
 	ap := e.findAnalyzedPlan(planName, curPlanValue)
 
 	for _, h := range ap.preHooks {
-		if err := h.PreExecute(p); err != nil {
+		if err := h.hook.PreExecute(p); err != nil {
 			return err
 		}
 	}
@@ -262,7 +130,7 @@ func (e Engine) doExecutePlan(ctx context.Context, planName string, p MasterPlan
 	}
 
 	for _, h := range ap.postHooks {
-		if err := h.PostExecute(p); err != nil {
+		if err := h.hook.PostExecute(p); err != nil {
 			return err
 		}
 	}
@@ -409,6 +277,19 @@ func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue r
 	}
 
 	return g.Wait()
+}
+
+func (e Engine) VerifyConfigurations() error {
+	for _, p := range e.plans {
+		if p.isMasterPlan {
+			rp := reflect.New(p.pType)
+			if err := isComplete(e, rp); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (e Engine) findExistingPlanOrCreate(planName string) analyzedPlan {

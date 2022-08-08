@@ -15,15 +15,7 @@ func swallowErrPlanExecutionEndingEarly(err error) error {
 }
 
 func extractFullNameFromValue(v any) string {
-	rv := reflect.ValueOf(v)
-
-	rt := func() reflect.Type {
-		if rv.Kind() == reflect.Pointer {
-			return rv.Elem().Type()
-		}
-
-		return rv.Type()
-	}()
+	rt := extractUnderlyingType(reflect.ValueOf(v))
 
 	return extractFullNameFromType(rt)
 }
@@ -37,7 +29,7 @@ func extractShortName(fullName string) string {
 	return fullName[shortNameIdx+1:]
 }
 
-func extractTypes(field reflect.StructField) (isPointerType bool, valueType reflect.Type, pointerType reflect.Type) {
+func extractFieldTypes(field reflect.StructField) (isPointerType bool, valueType reflect.Type, pointerType reflect.Type) {
 	rawFieldType := field.Type
 	isPointerType = rawFieldType.Kind() == reflect.Pointer
 
@@ -49,4 +41,12 @@ func extractTypes(field reflect.StructField) (isPointerType bool, valueType refl
 	pointerType = reflect.PointerTo(valueType)
 
 	return
+}
+
+func extractUnderlyingType(v reflect.Value) reflect.Type {
+	if v.Kind() == reflect.Pointer {
+		return v.Elem().Type()
+	}
+
+	return v.Type()
 }

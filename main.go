@@ -15,24 +15,31 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-type prePlatformFeeHook struct{}
-
-func (prePlatformFeeHook) PreExecute(p any) error {
-	config.Print("Before platform fee computer custom hook")
-
-	return nil
-}
-
-type postPlatformFeeHook struct{}
-
-func (postPlatformFeeHook) PostExecute(p any) error {
-	config.Print("After platform fee computer custom hook")
-
-	return nil
-}
-
 func main() {
+	err := config.Engine.VerifyConfigurations()
+	fmt.Println(err)
+
 	testEngine()
+}
+
+func testEngine() {
+	server.Serve()
+
+	p := endpoint.NewPlan(
+		dto.CostRequest{
+			PointA: "Clementi",
+			PointB: "Changi Airport",
+		},
+		server.Dependencies,
+	)
+
+	if err := p.Execute(context.Background()); err != nil {
+		fmt.Println(err)
+	}
+
+	//config.Print(p.GetTravelCost())
+	config.Print(p.GetTotalCost())
+	config.Print(p.GetVATAmount())
 }
 
 const loadMode = packages.NeedName |
@@ -44,7 +51,7 @@ const loadMode = packages.NeedName |
 	packages.NeedSyntax |
 	packages.NeedTypesInfo
 
-func testParsePackage2() {
+func testParsePackage() {
 	loadConfig := new(packages.Config)
 	loadConfig.Mode = loadMode
 	loadConfig.Fset = token.NewFileSet()
@@ -106,24 +113,4 @@ func testParsePackage2() {
 	// for _, declName := range pkg.Scope().Names() {
 	// 	fmt.Println(declName)
 	// }
-}
-
-func testEngine() {
-	server.Serve()
-
-	p := endpoint.NewPlan(
-		dto.CostRequest{
-			PointA: "Clementi",
-			PointB: "Changi Airport",
-		},
-		server.Dependencies,
-	)
-
-	if err := p.Execute(context.Background()); err != nil {
-		fmt.Println(err)
-	}
-
-	config.Print(p.GetTravelCost())
-	config.Print(p.GetTotalCost())
-	config.Print(p.GetVATAmount())
 }
