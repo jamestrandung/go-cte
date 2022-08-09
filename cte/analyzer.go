@@ -64,8 +64,18 @@ func (pa *planAnalyzer) analyze() analyzedPlan {
 			fieldPointerType: fieldPointerType,
 		}
 
-		if component := fa.analyze(); component != nil {
+		component, pre, post := fa.analyze()
+
+		if component != nil {
 			pa.components = append(pa.components, *component)
+		}
+
+		if pre != nil {
+			pa.preHooks = append(pa.preHooks, *pre)
+		}
+
+		if post != nil {
+			pa.postHooks = append(pa.postHooks, *post)
 		}
 	}
 
@@ -89,19 +99,20 @@ type fieldAnalyzer struct {
 	fieldPointerType reflect.Type
 }
 
-func (fa *fieldAnalyzer) analyze() *parsedComponent {
-	if fa.handleHooks() {
-		return nil
+func (fa *fieldAnalyzer) analyze() (*parsedComponent, *preHook, *postHook) {
+	pre, post := fa.handleHooks()
+	if pre != nil || post != nil {
+		return nil, pre, post
 	}
 
 	if nestedPlan := fa.handleNestedPlan(); nestedPlan != nil {
-		return nestedPlan
+		return nestedPlan, nil, nil
 	}
 
-	return fa.handleComputer()
+	return fa.handleComputer(), nil, nil
 }
 
-func (fa *fieldAnalyzer) handleHooks() bool {
+func (fa *fieldAnalyzer) handleHooks() (*preHook, *postHook) {
 	// Hook types might be embedded in a parent plan struct. Hence, we need to check if the type
 	// is a hook but not a plan so that we don't register a plan as a hook.
 	typeAndPointerTypeIsNotPlanType := !fa.fieldType.Implements(planType) && !fa.fieldPointerType.Implements(planType)
@@ -121,26 +132,20 @@ func (fa *fieldAnalyzer) handleHooks() bool {
 			panic(ErrMetadataMissing.Err(fa.fieldType))
 		}
 
-		func() {
-			if isPreHookType {
-				fa.pa.preHooks = append(fa.pa.preHooks, preHook{
-					hook:     hook.(Pre),
-					metadata: extractMetadata(mp, false),
-				})
-
-				return
-			}
-
-			fa.pa.postHooks = append(fa.pa.postHooks, postHook{
-				hook:     hook.(Post),
+		if isPreHookType {
+			return &preHook{
+				hook:     hook.(Pre),
 				metadata: extractMetadata(mp, false),
-			})
-		}()
+			}, nil
+		}
 
-		return true
+		return nil, &postHook{
+			hook:     hook.(Post),
+			metadata: extractMetadata(mp, false),
+		}
 	}
 
-	return false
+	return nil, nil
 }
 
 func (fa *fieldAnalyzer) handleNestedPlan() *parsedComponent {

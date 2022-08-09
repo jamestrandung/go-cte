@@ -4,16 +4,15 @@ import (
 	"reflect"
 )
 
-func isComplete(e Engine, rp reflect.Value) error {
-	planName := extractFullNameFromType(extractUnderlyingType(rp))
+func isComplete(e Engine, planValue reflect.Value) error {
+	planName := extractFullNameFromType(extractUnderlyingType(planValue))
 
 	sd := newStructDisassembler()
+	sd.extractAvailableMethods(planValue.Type())
 
-	sd.extractAvailableMethods(rp.Type())
-
-	var verifyFn func(planName string) error
-	verifyFn = func(planName string) error {
-		ap := e.findAnalyzedPlan(planName, rp)
+	var verifyFn func(planName string, curPlanValue reflect.Value) error
+	verifyFn = func(planName string, curPlanValue reflect.Value) error {
+		ap := e.findAnalyzedPlan(planName, curPlanValue)
 
 		for _, h := range ap.preHooks {
 			expectedInout, ok := h.metadata.getInoutInterface()
@@ -23,7 +22,7 @@ func isComplete(e Engine, rp reflect.Value) error {
 
 			err := isInterfaceSatisfied(sd, expectedInout)
 			if err != nil {
-				return ErrPlanNotMeetingInoutRequirements.Err(rp.Type(), expectedInout, err.Error())
+				return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error())
 			}
 		}
 
@@ -36,12 +35,20 @@ func isComplete(e Engine, rp reflect.Value) error {
 
 				err := isInterfaceSatisfied(sd, expectedInout)
 				if err != nil {
-					return ErrPlanNotMeetingInoutRequirements.Err(rp.Type(), expectedInout, err.Error())
+					return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error())
 				}
 			}
 
 			if _, ok := e.plans[component.id]; ok {
-				if err := verifyFn(component.id); err != nil {
+				nestedPlanValue := func() reflect.Value {
+					if curPlanValue.Kind() == reflect.Pointer {
+						return curPlanValue.Elem().Field(component.fieldIdx)
+					}
+
+					return curPlanValue.Field(component.fieldIdx)
+				}()
+
+				if err := verifyFn(component.id, nestedPlanValue); err != nil {
 					return err
 				}
 			}
@@ -55,14 +62,14 @@ func isComplete(e Engine, rp reflect.Value) error {
 
 			err := isInterfaceSatisfied(sd, expectedInout)
 			if err != nil {
-				return ErrPlanNotMeetingInoutRequirements.Err(rp.Type(), expectedInout, err.Error())
+				return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error())
 			}
 		}
 
 		return nil
 	}
 
-	return verifyFn(planName)
+	return verifyFn(planName, planValue)
 }
 
 func isInterfaceSatisfied(sd structDisassembler, expectedInterface reflect.Type) error {

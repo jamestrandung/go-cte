@@ -92,7 +92,7 @@ func (sd structDisassembler) isAvailableMoreThanOnce(m method) bool {
 	return sd.methodsAvailableMoreThanOnce.Has(m)
 }
 
-func (sd structDisassembler) extractAvailableMethods(t reflect.Type) (map[string]set.HashSet[method], []method) {
+func (sd structDisassembler) extractAvailableMethods(t reflect.Type) []method {
 	var hoistedMethods []method
 
 	actualType := t
@@ -106,7 +106,7 @@ func (sd structDisassembler) extractAvailableMethods(t reflect.Type) (map[string
 
 			// Extract methods from embedded fields
 			if rf.Anonymous {
-				_, childMethods := sd.extractAvailableMethods(rf.Type)
+				childMethods := sd.extractAvailableMethods(rf.Type)
 				hoistedMethods = append(hoistedMethods, childMethods...)
 			}
 		}
@@ -132,6 +132,12 @@ func (sd structDisassembler) extractAvailableMethods(t reflect.Type) (map[string
 			return false
 		}()
 
+		// If a parent struct has a method carrying the same signature as one
+		// that is available in an embedded field, it means this is a hoisted
+		// method or the parent is overriding the same method with its own
+		// implementation. In either case, we can assume this is a hoisted
+		// method as it doesn't make a difference to how we should validate
+		// code templates.
 		if isHoistedMethod {
 			continue
 		}
@@ -144,5 +150,5 @@ func (sd structDisassembler) extractAvailableMethods(t reflect.Type) (map[string
 	allMethods = append(allMethods, hoistedMethods...)
 	allMethods = append(allMethods, ownMethods...)
 
-	return sd.availableMethods, allMethods
+	return allMethods
 }
