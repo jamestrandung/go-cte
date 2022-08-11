@@ -49,7 +49,7 @@ type toExecutePlan struct {
 	mp MasterPlan
 }
 
-type computerParts struct {
+type computerWrapper struct {
 	LoadingComputer
 
 	ImpureComputer
@@ -60,33 +60,33 @@ type computerParts struct {
 	SwitchComputerWithoutLoadingData
 }
 
-func newComputerParts(rawComputer any) computerParts {
+func newComputerWrapper(rawComputer any) computerWrapper {
 	switch c := rawComputer.(type) {
 	case ImpureComputer:
-		return computerParts{
+		return computerWrapper{
 			LoadingComputer: c,
 			ImpureComputer:  c,
 		}
 	case ImpureComputerWithoutLoadingData:
-		return computerParts{
+		return computerWrapper{
 			ImpureComputerWithoutLoadingData: c,
 		}
 	case SideEffectComputer:
-		return computerParts{
+		return computerWrapper{
 			LoadingComputer:    c,
 			SideEffectComputer: c,
 		}
 	case SideEffectComputerWithoutLoadingData:
-		return computerParts{
+		return computerWrapper{
 			SideEffectComputerWithoutLoadingData: c,
 		}
 	case SwitchComputer:
-		return computerParts{
+		return computerWrapper{
 			LoadingComputer: c,
 			SwitchComputer:  c,
 		}
 	case SwitchComputerWithoutLoadingData:
-		return computerParts{
+		return computerWrapper{
 			SwitchComputerWithoutLoadingData: c,
 		}
 	default:
@@ -94,25 +94,25 @@ func newComputerParts(rawComputer any) computerParts {
 	}
 }
 
-func (cp computerParts) Compute(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
-	if cp.ImpureComputerWithoutLoadingData != nil {
-		return cp.ImpureComputerWithoutLoadingData.Compute(ctx, p)
+func (w computerWrapper) Compute(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
+	if w.ImpureComputerWithoutLoadingData != nil {
+		return w.ImpureComputerWithoutLoadingData.Compute(ctx, p)
 	}
 
-	if cp.SideEffectComputer != nil {
-		return struct{}{}, cp.SideEffectComputer.Compute(ctx, p, data)
+	if w.SideEffectComputer != nil {
+		return struct{}{}, w.SideEffectComputer.Compute(ctx, p, data)
 	}
 
-	if cp.SideEffectComputerWithoutLoadingData != nil {
-		return struct{}{}, cp.SideEffectComputerWithoutLoadingData.Compute(ctx, p)
+	if w.SideEffectComputerWithoutLoadingData != nil {
+		return struct{}{}, w.SideEffectComputerWithoutLoadingData.Compute(ctx, p)
 	}
 
 	mp, err := func() (MasterPlan, error) {
-		if cp.SwitchComputer != nil {
-			return cp.SwitchComputer.Switch(ctx, p, data)
+		if w.SwitchComputer != nil {
+			return w.SwitchComputer.Switch(ctx, p, data)
 		}
 
-		return cp.SwitchComputerWithoutLoadingData.Switch(ctx, p)
+		return w.SwitchComputerWithoutLoadingData.Switch(ctx, p)
 	}()
 
 	return toExecutePlan{
