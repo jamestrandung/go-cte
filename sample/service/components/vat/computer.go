@@ -9,7 +9,7 @@ import (
 type computer struct{}
 
 func (c computer) Compute(ctx context.Context, p cte.MasterPlan) (any, error) {
-	casted := p.(plan)
+	casted := p.(inout)
 
 	vatAmount := casted.GetTotalCost() * casted.GetVATPercent() / 100
 	casted.SetTotalCost(casted.GetTotalCost() + vatAmount)

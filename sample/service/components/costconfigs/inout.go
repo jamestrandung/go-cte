@@ -5,7 +5,7 @@ import (
 	"github.com/jamestrandung/go-cte/sample/dependencies/configsfetcher"
 )
 
-type plan interface {
+type inout interface {
 	Dependencies
 }
 
@@ -18,7 +18,7 @@ type CostConfigs cte.Result
 func (c CostConfigs) CTEMetadata() any {
 	return struct {
 		computer computer
-		inout    plan
+		inout    inout
 	}{}
 }
 

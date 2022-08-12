@@ -9,7 +9,7 @@ import (
 type Computer struct{}
 
 func (c Computer) Compute(ctx context.Context, p cte.MasterPlan) (any, error) {
-	casted := p.(plan)
+	casted := p.(inout)
 
 	return c.calculateTravelCost(casted), nil
 }

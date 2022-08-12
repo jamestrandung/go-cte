@@ -6,7 +6,7 @@ import (
 	"github.com/jamestrandung/go-cte/sample/service/scaffolding/fixedcost"
 )
 
-type plan interface {
+type inout interface {
 	Input
 }
 
@@ -26,7 +26,7 @@ type FixedCostBranch cte.Result
 func (c FixedCostBranch) CTEMetadata() any {
 	return struct {
 		computer computer
-		inout    plan
+		inout    inout
 	}{}
 }
 

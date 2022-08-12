@@ -2,7 +2,7 @@ package streaming
 
 import "github.com/jamestrandung/go-cte/cte"
 
-type plan interface {
+type inout interface {
 	Input
 }
 
@@ -15,6 +15,6 @@ type CostStreaming cte.SideEffect
 func (c CostStreaming) CTEMetadata() any {
 	return struct {
 		computer computer
-		inout    plan
+		inout    inout
 	}{}
 }

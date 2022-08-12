@@ -2,7 +2,7 @@ package platformfee
 
 import "github.com/jamestrandung/go-cte/cte"
 
-type plan interface {
+type inout interface {
 	Input
 	Output
 }
@@ -21,6 +21,6 @@ type PlatformFee cte.SyncSideEffect
 func (c PlatformFee) CTEMetadata() any {
 	return struct {
 		computer computer
-		inout    plan
+		inout    inout
 	}{}
 }

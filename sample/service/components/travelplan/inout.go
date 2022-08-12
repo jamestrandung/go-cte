@@ -5,7 +5,7 @@ import (
 	"github.com/jamestrandung/go-cte/sample/dependencies/mapservice"
 )
 
-type plan interface {
+type inout interface {
 	Input
 }
 
@@ -24,7 +24,7 @@ type TravelPlan cte.Result
 func (p TravelPlan) CTEMetadata() any {
 	return struct {
 		computer computer
-		inout    plan
+		inout    inout
 	}{}
 }
 

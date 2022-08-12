@@ -4,7 +4,7 @@ import (
 	"github.com/jamestrandung/go-cte/cte"
 )
 
-type plan interface {
+type inout interface {
 	Input
 }
 
@@ -21,7 +21,7 @@ type TravelCost cte.Result
 func (r TravelCost) CTEMetadata() any {
 	return struct {
 		computer Computer
-		inout    plan
+		inout    inout
 	}{}
 }
 

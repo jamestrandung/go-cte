@@ -17,7 +17,7 @@ import (
 
 func main() {
 	err := config.Engine.VerifyConfigurations()
-	fmt.Println(err)
+	fmt.Println("Engine configuration error:", err)
 
 	testEngine()
 }
