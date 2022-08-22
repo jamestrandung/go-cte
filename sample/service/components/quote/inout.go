@@ -31,9 +31,19 @@ func (c FixedCostBranch) CTEMetadata() any {
 }
 
 func (c FixedCostBranch) GetTotalCost() float64 {
-	return cte.Outcome[result](c.Task).GetTotalCost()
+	r := cte.Outcome[result](c.Task)
+	if r == nil {
+		return 0
+	}
+
+	return r.GetTotalCost()
 }
 
 func (c FixedCostBranch) GetVATAmount() float64 {
-	return cte.Outcome[result](c.Task).GetVATAmount()
+	r := cte.Outcome[result](c.Task)
+	if r == nil {
+		return 0
+	}
+
+	return r.GetVATAmount()
 }
