@@ -63,8 +63,7 @@ func (m method) String() string {
 }
 
 type structDisassembler struct {
-	availableMethods             map[string]set.HashSet[method]
-	methodsAvailableMoreThanOnce set.HashSet[method]
+	availableMethods map[string]set.HashSet[method]
 }
 
 func newStructDisassembler() structDisassembler {
@@ -80,16 +79,7 @@ func (sd structDisassembler) addAvailableMethod(m method) {
 		sd.availableMethods[m.name] = methodSet
 	}
 
-	if methodSet.Has(m) {
-		sd.methodsAvailableMoreThanOnce.Add(m)
-		return
-	}
-
 	methodSet.Add(m)
-}
-
-func (sd structDisassembler) isAvailableMoreThanOnce(m method) bool {
-	return sd.methodsAvailableMoreThanOnce.Has(m)
 }
 
 func (sd structDisassembler) extractAvailableMethods(t reflect.Type) []method {

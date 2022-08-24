@@ -2,6 +2,7 @@ package cte
 
 import (
 	"reflect"
+	"strings"
 )
 
 func isComplete(e Engine, planValue reflect.Value) error {
@@ -10,9 +11,16 @@ func isComplete(e Engine, planValue reflect.Value) error {
 	sd := newStructDisassembler()
 	sd.extractAvailableMethods(planValue.Type())
 
+	var cs componentStack
+
 	var verifyFn func(planName string, curPlanValue reflect.Value) error
 	verifyFn = func(planName string, curPlanValue reflect.Value) error {
 		ap := e.findAnalyzedPlan(planName, curPlanValue)
+
+		cs = cs.Push(planName)
+		defer func() {
+			cs = cs.Pop()
+		}()
 
 		for _, h := range ap.preHooks {
 			expectedInout, ok := h.metadata.getInoutInterface()
@@ -22,7 +30,8 @@ func isComplete(e Engine, planValue reflect.Value) error {
 
 			err := isInterfaceSatisfied(sd, expectedInout)
 			if err != nil {
-				return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error())
+				cs = cs.Push(reflect.TypeOf(h.hook).Name())
+				return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error(), cs)
 			}
 		}
 
@@ -35,7 +44,8 @@ func isComplete(e Engine, planValue reflect.Value) error {
 
 				err := isInterfaceSatisfied(sd, expectedInout)
 				if err != nil {
-					return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error())
+					cs = cs.Push(component.id)
+					return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error(), cs)
 				}
 			}
 
@@ -62,7 +72,8 @@ func isComplete(e Engine, planValue reflect.Value) error {
 
 			err := isInterfaceSatisfied(sd, expectedInout)
 			if err != nil {
-				return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error())
+				cs = cs.Push(reflect.TypeOf(h.hook).Name())
+				return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error(), cs)
 			}
 		}
 
@@ -92,11 +103,21 @@ func isInterfaceSatisfied(sd structDisassembler, expectedInterface reflect.Type)
 		if !foundMethod.hasSameSignature(requiredMethod) {
 			return ErrPlanHavingMethodButSignatureMismatched.Err(requiredMethod, foundMethod)
 		}
-
-		if sd.isAvailableMoreThanOnce(foundMethod) {
-			return ErrPlanHavingSameMethodRegisteredMoreThanOnce.Err(foundMethod)
-		}
 	}
 
 	return nil
+}
+
+type componentStack []string
+
+func (s componentStack) Push(componentName string) componentStack {
+	return append(s, componentName)
+}
+
+func (s componentStack) Pop() componentStack {
+	return s[0 : len(s)-1]
+}
+
+func (s componentStack) String() string {
+	return strings.Join(s, " >> ")
 }
