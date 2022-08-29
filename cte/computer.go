@@ -49,45 +49,79 @@ type toExecutePlan struct {
 	mp MasterPlan
 }
 
+type bridgeComputer struct {
+	computeFn func(ctx context.Context, p MasterPlan, data LoadingData) (any, error)
+}
+
+func (bc bridgeComputer) Compute(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
+	return bc.computeFn(ctx, p, data)
+}
+
 type computerWrapper struct {
 	LoadingComputer
-
-	ImpureComputer
-	ImpureComputerWithLoadingData
-	SideEffectComputer
-	SideEffectComputerWithLoadingData
-	SwitchComputer
-	SwitchComputerWithLoadingData
+	bridgeComputer
 }
 
 func newComputerWrapper(rawComputer any) computerWrapper {
 	switch c := rawComputer.(type) {
 	case ImpureComputerWithLoadingData:
 		return computerWrapper{
-			LoadingComputer:               c,
-			ImpureComputerWithLoadingData: c,
+			LoadingComputer: c,
+			bridgeComputer: bridgeComputer{
+				computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
+					return c.Compute(ctx, p, data)
+				},
+			},
 		}
 	case ImpureComputer:
 		return computerWrapper{
-			ImpureComputer: c,
+			bridgeComputer: bridgeComputer{
+				computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
+					return c.Compute(ctx, p)
+				},
+			},
 		}
 	case SideEffectComputerWithLoadingData:
 		return computerWrapper{
-			LoadingComputer:                   c,
-			SideEffectComputerWithLoadingData: c,
+			LoadingComputer: c,
+			bridgeComputer: bridgeComputer{
+				computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
+					return struct{}{}, c.Compute(ctx, p, data)
+				},
+			},
 		}
 	case SideEffectComputer:
 		return computerWrapper{
-			SideEffectComputer: c,
+			bridgeComputer: bridgeComputer{
+				computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
+					return struct{}{}, c.Compute(ctx, p)
+				},
+			},
 		}
 	case SwitchComputerWithLoadingData:
 		return computerWrapper{
-			LoadingComputer:               c,
-			SwitchComputerWithLoadingData: c,
+			LoadingComputer: c,
+			bridgeComputer: bridgeComputer{
+				computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
+					mp, err := c.Switch(ctx, p, data)
+
+					return toExecutePlan{
+						mp: mp,
+					}, err
+				},
+			},
 		}
 	case SwitchComputer:
 		return computerWrapper{
-			SwitchComputer: c,
+			bridgeComputer: bridgeComputer{
+				computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
+					mp, err := c.Switch(ctx, p)
+
+					return toExecutePlan{
+						mp: mp,
+					}, err
+				},
+			},
 		}
 	default:
 		panic(ErrInvalidComputerType.Err(reflect.TypeOf(c)))
@@ -95,29 +129,7 @@ func newComputerWrapper(rawComputer any) computerWrapper {
 }
 
 func (w computerWrapper) Compute(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
-	if w.ImpureComputer != nil {
-		return w.ImpureComputer.Compute(ctx, p)
-	}
-
-	if w.SideEffectComputerWithLoadingData != nil {
-		return struct{}{}, w.SideEffectComputerWithLoadingData.Compute(ctx, p, data)
-	}
-
-	if w.SideEffectComputer != nil {
-		return struct{}{}, w.SideEffectComputer.Compute(ctx, p)
-	}
-
-	mp, err := func() (MasterPlan, error) {
-		if w.SwitchComputerWithLoadingData != nil {
-			return w.SwitchComputerWithLoadingData.Switch(ctx, p, data)
-		}
-
-		return w.SwitchComputer.Switch(ctx, p)
-	}()
-
-	return toExecutePlan{
-		mp: mp,
-	}, err
+	return w.bridgeComputer.Compute(ctx, p, data)
 }
 
 type SideEffect struct{}
