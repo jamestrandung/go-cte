@@ -21,6 +21,10 @@ func extractFullNameFromValue(v any) string {
 }
 
 func extractFullNameFromType(t reflect.Type) string {
+	if t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+
 	return t.PkgPath() + "/" + t.Name()
 }
 
