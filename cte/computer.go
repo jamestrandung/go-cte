@@ -49,87 +49,83 @@ type toExecutePlan struct {
 	mp MasterPlan
 }
 
+type loadingFn func(ctx context.Context, p MasterPlan) (any, error)
+
 type bridgeComputer struct {
+	loadingFn loadingFn
 	computeFn func(ctx context.Context, p MasterPlan, data LoadingData) (any, error)
+}
+
+func (bc bridgeComputer) Load(ctx context.Context, p MasterPlan) (any, error) {
+	if bc.loadingFn == nil {
+		return nil, nil
+	}
+
+	return bc.loadingFn(ctx, p)
 }
 
 func (bc bridgeComputer) Compute(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
 	return bc.computeFn(ctx, p, data)
 }
 
-type computerWrapper struct {
-	LoadingComputer
-	bridgeComputer
-}
-
-func newComputerWrapper(rawComputer any) computerWrapper {
+func newBridgeComputer(rawComputer any) bridgeComputer {
 	switch c := rawComputer.(type) {
 	case ImpureComputerWithLoadingData:
-		return computerWrapper{
-			LoadingComputer: c,
-			bridgeComputer: bridgeComputer{
-				computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
-					return c.Compute(ctx, p, data)
-				},
+		return bridgeComputer{
+			loadingFn: func(ctx context.Context, p MasterPlan) (interface{}, error) {
+				return c.Load(ctx, p)
+			},
+			computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (interface{}, error) {
+				return c.Compute(ctx, p, data)
 			},
 		}
 	case ImpureComputer:
-		return computerWrapper{
-			bridgeComputer: bridgeComputer{
-				computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
-					return c.Compute(ctx, p)
-				},
+		return bridgeComputer{
+			computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (interface{}, error) {
+				return c.Compute(ctx, p)
 			},
 		}
 	case SideEffectComputerWithLoadingData:
-		return computerWrapper{
-			LoadingComputer: c,
-			bridgeComputer: bridgeComputer{
-				computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
-					return struct{}{}, c.Compute(ctx, p, data)
-				},
+		return bridgeComputer{
+			loadingFn: func(ctx context.Context, p MasterPlan) (interface{}, error) {
+				return c.Load(ctx, p)
+			},
+			computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (interface{}, error) {
+				return struct{}{}, c.Compute(ctx, p, data)
 			},
 		}
 	case SideEffectComputer:
-		return computerWrapper{
-			bridgeComputer: bridgeComputer{
-				computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
-					return struct{}{}, c.Compute(ctx, p)
-				},
+		return bridgeComputer{
+			computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (interface{}, error) {
+				return struct{}{}, c.Compute(ctx, p)
 			},
 		}
 	case SwitchComputerWithLoadingData:
-		return computerWrapper{
-			LoadingComputer: c,
-			bridgeComputer: bridgeComputer{
-				computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
-					mp, err := c.Switch(ctx, p, data)
+		return bridgeComputer{
+			loadingFn: func(ctx context.Context, p MasterPlan) (interface{}, error) {
+				return c.Load(ctx, p)
+			},
+			computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (interface{}, error) {
+				mp, err := c.Switch(ctx, p, data)
 
-					return toExecutePlan{
-						mp: mp,
-					}, err
-				},
+				return toExecutePlan{
+					mp: mp,
+				}, err
 			},
 		}
 	case SwitchComputer:
-		return computerWrapper{
-			bridgeComputer: bridgeComputer{
-				computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
-					mp, err := c.Switch(ctx, p)
+		return bridgeComputer{
+			computeFn: func(ctx context.Context, p MasterPlan, data LoadingData) (interface{}, error) {
+				mp, err := c.Switch(ctx, p)
 
-					return toExecutePlan{
-						mp: mp,
-					}, err
-				},
+				return toExecutePlan{
+					mp: mp,
+				}, err
 			},
 		}
 	default:
 		panic(ErrInvalidComputerType.Err(reflect.TypeOf(c)))
 	}
-}
-
-func (w computerWrapper) Compute(ctx context.Context, p MasterPlan, data LoadingData) (any, error) {
-	return w.bridgeComputer.Compute(ctx, p, data)
 }
 
 type SideEffect struct{}
