@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/jamestrandung/go-cte/sample/dependencies/configsfetcher"
 	"github.com/jamestrandung/go-cte/sample/dependencies/mapservice"
+	"github.com/jamestrandung/go-cte/sample/service-no-framework/endpoint"
 )
 
 type dependencies struct {
@@ -19,10 +20,13 @@ func (d dependencies) GetMapService() mapservice.Service {
 }
 
 var Dependencies dependencies
+var Handler *endpoint.Handler
 
 func Serve() {
 	Dependencies = dependencies{
 		configsFetcher: configsfetcher.Fetcher{},
 		mapService:     mapservice.Service{},
 	}
+
+	Handler = endpoint.NewHandler(configsfetcher.Fetcher{}, mapservice.Service{})
 }
