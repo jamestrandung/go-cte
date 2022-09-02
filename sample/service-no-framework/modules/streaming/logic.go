@@ -6,5 +6,5 @@ import (
 )
 
 func StreamQuote(quote *dto.Quote) {
-    config.Print("Streaming calculated cost:", quote.TotalCost)
+	config.Print("Streaming calculated cost:", quote.TotalCost)
 }
