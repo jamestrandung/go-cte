@@ -11,7 +11,7 @@ import (
 )
 
 type registeredComputer struct {
-	computer ImpureComputer
+	computer delegatingComputer
 	metadata parsedMetadata
 }
 
@@ -71,29 +71,9 @@ func (e Engine) registerComputer(mp MetadataProvider) {
 	}()
 
 	computer := reflect.New(computerType).Interface()
-
-	switch c := computer.(type) {
-	case ImpureComputer:
-		e.computers[computerID] = registeredComputer{
-			computer: c,
-			metadata: metadata,
-		}
-	case SideEffectComputer:
-		e.computers[computerID] = registeredComputer{
-			computer: bridgeComputer{
-				se: c,
-			},
-			metadata: metadata,
-		}
-	case SwitchComputer:
-		e.computers[computerID] = registeredComputer{
-			computer: bridgeComputer{
-				sw: c,
-			},
-			metadata: metadata,
-		}
-	default:
-		panic(ErrInvalidComputerType.Err(computerType))
+	e.computers[computerID] = registeredComputer{
+		computer: newDelegatingComputer(computer),
+		metadata: metadata,
 	}
 }
 
@@ -121,7 +101,7 @@ func (e Engine) doExecutePlan(ctx context.Context, planName string, p MasterPlan
 
 	err := func() error {
 		if isSequential {
-			return e.doExecuteSync(ctx, p, curPlanValue, ap.components)
+			return e.doExecuteSync(ctx, p, curPlanValue, ap.loaders, ap.components)
 		}
 
 		return e.doExecuteAsync(ctx, p, curPlanValue, ap.components)
@@ -140,9 +120,8 @@ func (e Engine) doExecutePlan(ctx context.Context, planName string, p MasterPlan
 	return nil
 }
 
-func (e Engine) doExecuteComputer(ctx context.Context, c ImpureComputer, p MasterPlan) (any, error) {
-	result, err := c.Compute(ctx, p)
-
+func (e Engine) doExecuteComputer(ctx context.Context, c delegatingComputer, p MasterPlan, loadingData LoadingData) (any, error) {
+	result, err := c.Compute(ctx, p, loadingData)
 	if tep, ok := result.(toExecutePlan); ok {
 		if err != nil {
 			return tep.mp, err
@@ -154,8 +133,45 @@ func (e Engine) doExecuteComputer(ctx context.Context, c ImpureComputer, p Maste
 	return result, err
 }
 
-func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue reflect.Value, components []parsedComponent) error {
-	for _, component := range components {
+func (e Engine) doConcurrentLoading(ctx context.Context, p MasterPlan, componentCount int, loaders []loadingFn) []LoadingData {
+	// Data has to be loaded at the same index with the corresponding component
+	loadingData := make([]LoadingData, componentCount)
+	if len(loaders) == 0 {
+		return loadingData
+	}
+
+	tasks := make([]async.SilentTask, 0, len(loaders))
+	for idx, loader := range loaders {
+		if loader == nil {
+			continue
+		}
+
+		i := idx
+		l := loader
+
+		tasks = append(
+			tasks,
+			async.NewSilentTask(func(taskCtx context.Context) error {
+				data, err := l(taskCtx, p)
+
+				loadingData[i] = LoadingData{
+					Data: data,
+					Err:  err,
+				}
+
+				return nil
+			}))
+	}
+
+	async.ForkJoin(ctx, tasks)
+
+	return loadingData
+}
+
+func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue reflect.Value, loaders []loadingFn, components []parsedComponent) error {
+	loadingData := e.doConcurrentLoading(ctx, p, len(components), loaders)
+
+	for idx, component := range components {
 		if c, ok := e.computers[component.id]; ok {
 			result, err := func() (result any, err error) {
 				defer func() {
@@ -164,7 +180,7 @@ func (e Engine) doExecuteSync(ctx context.Context, p MasterPlan, curPlanValue re
 					}
 				}()
 
-				return e.doExecuteComputer(ctx, c.computer, p)
+				return e.doExecuteComputer(ctx, c.computer, p, loadingData[idx])
 			}()
 
 			// Register Result/SyncResult in a sequential plan's field
@@ -224,7 +240,12 @@ func (e Engine) doExecuteAsync(ctx context.Context, p MasterPlan, curPlanValue r
 		if c, ok := e.computers[componentID]; ok {
 			task := async.NewTask(
 				func(taskCtx context.Context) (any, error) {
-					return e.doExecuteComputer(taskCtx, c.computer, p)
+					data, err := c.computer.Load(taskCtx, p)
+
+					return e.doExecuteComputer(taskCtx, c.computer, p, LoadingData{
+						Data: data,
+						Err:  err,
+					})
 				},
 			)
 

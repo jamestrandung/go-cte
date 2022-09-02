@@ -20,6 +20,7 @@ type analyzedPlan struct {
 	isMasterPlan bool
 	isSequential bool
 	components   []parsedComponent
+	loaders      []loadingFn
 	preHooks     []preHook
 	postHooks    []postHook
 }
@@ -81,14 +82,40 @@ func (pa *planAnalyzer) analyze() analyzedPlan {
 
 	_, isMasterPlan := pa.plan.(MasterPlan)
 
+	loaders := pa.extractLoaders()
+
 	return analyzedPlan{
 		pType:        extractUnderlyingType(pa.planValue),
 		isMasterPlan: isMasterPlan,
 		isSequential: pa.plan.IsSequentialCTEPlan(),
 		components:   pa.components,
+		loaders:      loaders,
 		preHooks:     pa.preHooks,
 		postHooks:    pa.postHooks,
 	}
+}
+
+func (pa *planAnalyzer) extractLoaders() []loadingFn {
+	// Loaders have to maintain the same index with the corresponding component.
+	// Hence, cannot simply use append() on an empty slice.
+	loaders := make([]loadingFn, len(pa.components))
+
+	foundLoader := false
+	for idx, component := range pa.components {
+		if c, ok := pa.engine.computers[component.id]; ok {
+			if c.computer.loadingFn != nil {
+				loaders[idx] = c.computer.loadingFn
+				foundLoader = true
+			}
+		}
+	}
+
+	if !foundLoader {
+		var tmp []loadingFn
+		return tmp
+	}
+
+	return loaders
 }
 
 type fieldAnalyzer struct {
