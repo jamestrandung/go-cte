@@ -82,7 +82,7 @@ func isComplete(e Engine, planValue reflect.Value) error {
 	return verifyFn(rootPlanName, planValue)
 }
 
-func isInterfaceSatisfied(sd structDisassembler, expectedInterface reflect.Type, rootPlanName string) error {
+var isInterfaceSatisfied = func(sd structDisassembler, expectedInterface reflect.Type, rootPlanName string) error {
 	for i := 0; i < expectedInterface.NumMethod(); i++ {
 		rm := expectedInterface.Method(i)
 

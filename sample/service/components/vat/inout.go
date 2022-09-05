@@ -9,6 +9,10 @@ type inout interface {
 	Output
 }
 
+type dummy interface {
+	GetVATPercent() float64
+}
+
 type Input interface {
 	GetVATPercent() float64
 	GetTotalCost() float64
