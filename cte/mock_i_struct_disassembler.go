@@ -68,6 +68,29 @@ func (_m *mockIStructDisassembler) extractOwnMethods(t reflect.Type, rootPlanNam
 	return r0
 }
 
+// findAvailableMethods provides a mock function with given fields: name
+func (_m *mockIStructDisassembler) findAvailableMethods(name string) (set.HashSet[method], bool) {
+	ret := _m.Called(name)
+
+	var r0 set.HashSet[method]
+	if rf, ok := ret.Get(0).(func(string) set.HashSet[method]); ok {
+		r0 = rf(name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(set.HashSet[method])
+		}
+	}
+
+	var r1 bool
+	if rf, ok := ret.Get(1).(func(string) bool); ok {
+		r1 = rf(name)
+	} else {
+		r1 = ret.Get(1).(bool)
+	}
+
+	return r0, r1
+}
+
 // findMethodLocations provides a mock function with given fields: methodSet, rootPlanName
 func (_m *mockIStructDisassembler) findMethodLocations(methodSet set.HashSet[method], rootPlanName string) []string {
 	ret := _m.Called(methodSet, rootPlanName)

@@ -70,6 +70,7 @@ var extractMethodDetails = func(rm reflect.Method, ignoreFirstReceiverArgument b
 //go:generate mockery --name iStructDisassembler --case=underscore --inpackage
 type iStructDisassembler interface {
 	isAvailableMoreThanOnce(m method) bool
+	findAvailableMethods(name string) (set.HashSet[method], bool)
 	findMethodLocations(methodSet set.HashSet[method], rootPlanName string) []string
 	extractAvailableMethods(t reflect.Type) []method
 	addAvailableMethod(rootPlanName string, cs componentStack, m method)
@@ -107,6 +108,11 @@ func (sd structDisassembler) self() iStructDisassembler {
 
 func (sd structDisassembler) isAvailableMoreThanOnce(m method) bool {
 	return sd.methodsAvailableMoreThanOnce.Has(m)
+}
+
+func (sd structDisassembler) findAvailableMethods(name string) (set.HashSet[method], bool) {
+	result, ok := sd.availableMethods[name]
+	return result, ok && result.Count() > 0
 }
 
 func (sd structDisassembler) findMethodLocations(methodSet set.HashSet[method], rootPlanName string) []string {

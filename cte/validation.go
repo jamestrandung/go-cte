@@ -1,138 +1,138 @@
 package cte
 
 import (
-	"reflect"
-	"strings"
+    "reflect"
+    "strings"
 )
 
 func isComplete(e Engine, planValue reflect.Value) error {
-	sd := newStructDisassembler()
-	sd.extractAvailableMethods(planValue.Type())
+    sd := newStructDisassembler()
+    sd.extractAvailableMethods(planValue.Type())
 
-	var cs componentStack
-	rootPlanName := extractFullNameFromType(planValue.Type())
+    var cs componentStack
+    rootPlanName := extractFullNameFromType(planValue.Type())
 
-	var verifyFn func(planName string, curPlanValue reflect.Value) error
-	verifyFn = func(planName string, curPlanValue reflect.Value) error {
-		ap := e.findAnalyzedPlan(planName, curPlanValue)
+    var verifyFn func(planName string, curPlanValue reflect.Value) error
+    verifyFn = func(planName string, curPlanValue reflect.Value) error {
+        ap := e.findAnalyzedPlan(planName, curPlanValue)
 
-		cs = cs.push(planName)
-		defer func() {
-			cs = cs.pop()
-		}()
+        cs = cs.push(planName)
+        defer func() {
+            cs = cs.pop()
+        }()
 
-		for _, h := range ap.preHooks {
-			expectedInout, ok := h.metadata.getInoutInterface()
-			if !ok {
-				return ErrInoutMetaMissing.Err(reflect.TypeOf(h.hook))
-			}
+        for _, h := range ap.preHooks {
+            expectedInout, ok := h.metadata.getInoutInterface()
+            if !ok {
+                return ErrInoutMetaMissing.Err(reflect.TypeOf(h.hook))
+            }
 
-			err := isInterfaceSatisfied(sd, expectedInout, rootPlanName)
-			if err != nil {
-				cs = cs.push(reflect.TypeOf(h.hook).Name())
-				return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error(), cs)
-			}
-		}
+            err := isInterfaceSatisfied(sd, expectedInout, rootPlanName)
+            if err != nil {
+                cs = cs.push(reflect.TypeOf(h.hook).Name())
+                return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error(), cs)
+            }
+        }
 
-		for _, component := range ap.components {
-			if c, ok := e.computers[component.id]; ok {
-				expectedInout, ok := c.metadata.getInoutInterface()
-				if !ok {
-					return ErrInoutMetaMissing.Err(component.id)
-				}
+        for _, component := range ap.components {
+            if c, ok := e.computers[component.id]; ok {
+                expectedInout, ok := c.metadata.getInoutInterface()
+                if !ok {
+                    return ErrInoutMetaMissing.Err(component.id)
+                }
 
-				err := isInterfaceSatisfied(sd, expectedInout, rootPlanName)
-				if err != nil {
-					cs = cs.push(component.id)
-					return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error(), cs)
-				}
-			}
+                err := isInterfaceSatisfied(sd, expectedInout, rootPlanName)
+                if err != nil {
+                    cs = cs.push(component.id)
+                    return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error(), cs)
+                }
+            }
 
-			if _, ok := e.plans[component.id]; ok {
-				nestedPlanValue := func() reflect.Value {
-					if curPlanValue.Kind() == reflect.Pointer {
-						return curPlanValue.Elem().Field(component.fieldIdx)
-					}
+            if _, ok := e.plans[component.id]; ok {
+                nestedPlanValue := func() reflect.Value {
+                    if curPlanValue.Kind() == reflect.Pointer {
+                        return curPlanValue.Elem().Field(component.fieldIdx)
+                    }
 
-					return curPlanValue.Field(component.fieldIdx)
-				}()
+                    return curPlanValue.Field(component.fieldIdx)
+                }()
 
-				if err := verifyFn(component.id, nestedPlanValue); err != nil {
-					return err
-				}
-			}
-		}
+                if err := verifyFn(component.id, nestedPlanValue); err != nil {
+                    return err
+                }
+            }
+        }
 
-		for _, h := range ap.postHooks {
-			expectedInout, ok := h.metadata.getInoutInterface()
-			if !ok {
-				return ErrInoutMetaMissing.Err(reflect.TypeOf(h.hook))
-			}
+        for _, h := range ap.postHooks {
+            expectedInout, ok := h.metadata.getInoutInterface()
+            if !ok {
+                return ErrInoutMetaMissing.Err(reflect.TypeOf(h.hook))
+            }
 
-			err := isInterfaceSatisfied(sd, expectedInout, rootPlanName)
-			if err != nil {
-				cs = cs.push(reflect.TypeOf(h.hook).Name())
-				return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error(), cs)
-			}
-		}
+            err := isInterfaceSatisfied(sd, expectedInout, rootPlanName)
+            if err != nil {
+                cs = cs.push(reflect.TypeOf(h.hook).Name())
+                return ErrPlanNotMeetingInoutRequirements.Err(planValue.Type(), expectedInout, err.Error(), cs)
+            }
+        }
 
-		return nil
-	}
+        return nil
+    }
 
-	return verifyFn(rootPlanName, planValue)
+    return verifyFn(rootPlanName, planValue)
 }
 
 var isInterfaceSatisfied = func(sd structDisassembler, expectedInterface reflect.Type, rootPlanName string) error {
-	for i := 0; i < expectedInterface.NumMethod(); i++ {
-		rm := expectedInterface.Method(i)
+    for i := 0; i < expectedInterface.NumMethod(); i++ {
+        rm := expectedInterface.Method(i)
 
-		requiredMethod := extractMethodDetails(rm, false)
+        requiredMethod := extractMethodDetails(rm, false)
 
-		methodSet, ok := sd.availableMethods[requiredMethod.name]
-		if !ok {
-			return ErrPlanMissingMethod.Err(requiredMethod)
-		}
+        methodSet, ok := sd.self().findAvailableMethods(requiredMethod.name)
+        if !ok {
+            return ErrPlanMissingMethod.Err(requiredMethod)
+        }
 
-		if methodSet.Count() > 1 {
-			methodLocations := sd.findMethodLocations(methodSet, rootPlanName)
-			return ErrPlanHavingAmbiguousMethods.Err(requiredMethod, methodSet, strings.Join(methodLocations, "; "))
-		}
+        if methodSet.Count() > 1 {
+            methodLocations := sd.self().findMethodLocations(methodSet, rootPlanName)
+            return ErrPlanHavingAmbiguousMethods.Err(requiredMethod, toString(methodSet), strings.Join(methodLocations, "; "))
+        }
 
-		foundMethod := methodSet.Items()[0]
+        foundMethod := methodSet.Items()[0]
 
-		if !foundMethod.hasSameSignature(requiredMethod) {
-			return ErrPlanHavingMethodButSignatureMismatched.Err(requiredMethod, foundMethod)
-		}
+        if !foundMethod.hasSameSignature(requiredMethod) {
+            return ErrPlanHavingMethodButSignatureMismatched.Err(requiredMethod, foundMethod)
+        }
 
-		if sd.isAvailableMoreThanOnce(foundMethod) {
-			methodLocations := sd.findMethodLocations(methodSet, rootPlanName)
-			return ErrPlanHavingSameMethodRegisteredMoreThanOnce.Err(foundMethod, strings.Join(methodLocations, "; "))
-		}
-	}
+        if sd.self().isAvailableMoreThanOnce(foundMethod) {
+            methodLocations := sd.self().findMethodLocations(methodSet, rootPlanName)
+            return ErrPlanHavingSameMethodRegisteredMoreThanOnce.Err(foundMethod, strings.Join(methodLocations, "; "))
+        }
+    }
 
-	return nil
+    return nil
 }
 
 type componentStack []string
 
 func (s componentStack) push(componentName string) componentStack {
-	return append(s, componentName)
+    return append(s, componentName)
 }
 
 func (s componentStack) pop() componentStack {
-	return s[0 : len(s)-1]
+    return s[0 : len(s)-1]
 }
 
 func (s componentStack) clone() componentStack {
-	result := make([]string, 0, len(s))
+    result := make([]string, 0, len(s))
 
-	for _, c := range s {
-		result = append(result, c)
-	}
+    for _, c := range s {
+        result = append(result, c)
+    }
 
-	return result
+    return result
 }
 
 func (s componentStack) String() string {
-	return strings.Join(s, " >> ")
+    return strings.Join(s, " >> ")
 }

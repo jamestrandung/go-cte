@@ -192,6 +192,32 @@ func TestStructDisassembler_IsAvailableMoreThanOnce(t *testing.T) {
 	assert.Equal(t, true, sd.isAvailableMoreThanOnce(m))
 }
 
+func TestStructDisassembler_FindAvailableMethods(t *testing.T) {
+	sd := newStructDisassembler()
+
+	func() {
+		ms, ok := sd.findAvailableMethods("dummy")
+		assert.Equal(t, 0, ms.Count())
+		assert.False(t, ok)
+	}()
+
+	sd.availableMethods["dummy"] = set.NewHashSet[method](method{name: "dummy"})
+
+	func() {
+		ms, ok := sd.findAvailableMethods("dummy")
+		assert.Equal(t, 1, ms.Count())
+		assert.True(t, ok)
+	}()
+
+	sd.availableMethods["empty"] = set.NewHashSet[method]()
+
+	func() {
+		ms, ok := sd.findAvailableMethods("empty")
+		assert.Equal(t, 0, ms.Count())
+		assert.False(t, ok)
+	}()
+}
+
 func TestStructDisassembler_FindMethodLocations(t *testing.T) {
 	methodToLookFor1 := method{
 		owningType: "owningType1",

@@ -1,6 +1,7 @@
 package cte
 
 import (
+	"github.com/jamestrandung/go-data-structure/set"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
@@ -161,4 +162,10 @@ func TestExtractUnderlyingType(t *testing.T) {
 			assert.Equal(t, s.expected, extractUnderlyingType(s.value))
 		})
 	}
+}
+
+func TestToString(t *testing.T) {
+	s := set.NewHashSet[string]("c", "d", "a", "e", "s", "z", "m", "n")
+
+	assert.Equal(t, "a, c, d, e, m, n, s, z", toString(s))
 }

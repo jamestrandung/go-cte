@@ -1,7 +1,10 @@
 package cte
 
 import (
+	"fmt"
+	"github.com/jamestrandung/go-data-structure/set"
 	"reflect"
+	"sort"
 	"strings"
 )
 
@@ -51,4 +54,15 @@ var extractUnderlyingType = func(v reflect.Value) reflect.Type {
 	}
 
 	return v.Type()
+}
+
+func toString[T comparable](s set.HashSet[T]) string {
+	all := make([]string, 0, s.Count())
+	for _, element := range s.Items() {
+		all = append(all, fmt.Sprintf("%v", element))
+	}
+
+	sort.Strings(all)
+
+	return strings.Join(all, ", ")
 }
