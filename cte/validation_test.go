@@ -1,13 +1,104 @@
 package cte
 
 import (
-	"github.com/jamestrandung/go-data-structure/set"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/jamestrandung/go-data-structure/set"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
+
+func TestIsComplete(t *testing.T) {
+
+}
+
+func TestVerifyComponentCompleteness(t *testing.T) {
+	defer func(original func(sd structDisassembler, expectedInterface reflect.Type, rootPlanName string) error) {
+		isInterfaceSatisfied = original
+	}(isInterfaceSatisfied)
+
+	scenarios := []struct {
+		desc string
+		test func(t *testing.T)
+	}{
+		{
+			desc: "ErrInoutMetaMissing",
+			test: func(t *testing.T) {
+				pm := parsedMetadata{}
+				sd := newStructDisassembler()
+				cs := componentStack{}
+				rootPlanName := "rootPlanName"
+				componentID := "componentID"
+				planType := "planType"
+
+				err := verifyComponentCompleteness(pm, sd, cs, rootPlanName, componentID, planType)
+				_, ok := pm.getInoutInterface()
+				assert.False(t, ok)
+				assert.Equal(t, ErrInoutMetaMissing.Err(componentID), err)
+			},
+		},
+		{
+			desc: "isInterfaceSatisfied return non-nil",
+			test: func(t *testing.T) {
+				pm := parsedMetadata{}
+				pm[metaTypeInout] = reflect.TypeOf("dummy")
+
+				sd := newStructDisassembler()
+				cs := componentStack{}
+				rootPlanName := "rootPlanName"
+				componentID := "componentID"
+				planType := "planType"
+
+				isInterfaceSatisfied = func(sdIn structDisassembler, expectedInterface reflect.Type, rootPlanNameIn string) error {
+					assert.Equal(t, sd, sdIn)
+					assert.Equal(t, reflect.TypeOf("dummy"), expectedInterface)
+					assert.Equal(t, rootPlanName, rootPlanNameIn)
+
+					return assert.AnError
+				}
+
+				err := verifyComponentCompleteness(pm, sd, cs, rootPlanName, componentID, planType)
+				expectedInout, ok := pm.getInoutInterface()
+				assert.True(t, ok)
+				assert.Equal(t, ErrPlanNotMeetingInoutRequirements.Err(planType, expectedInout, assert.AnError.Error(), cs.push("componentID")), err)
+			},
+		},
+		{
+			desc: "isInterfaceSatisfied return nil",
+			test: func(t *testing.T) {
+				pm := parsedMetadata{}
+				pm[metaTypeInout] = reflect.TypeOf("dummy")
+
+				sd := newStructDisassembler()
+				cs := componentStack{}
+				rootPlanName := "rootPlanName"
+				componentID := "componentID"
+				planType := "planType"
+
+				isInterfaceSatisfied = func(sdIn structDisassembler, expectedInterface reflect.Type, rootPlanNameIn string) error {
+					assert.Equal(t, sd, sdIn)
+					assert.Equal(t, reflect.TypeOf("dummy"), expectedInterface)
+					assert.Equal(t, rootPlanName, rootPlanNameIn)
+
+					return nil
+				}
+
+				err := verifyComponentCompleteness(pm, sd, cs, rootPlanName, componentID, planType)
+				_, ok := pm.getInoutInterface()
+				assert.True(t, ok)
+				assert.Equal(t, nil, err)
+			},
+		},
+	}
+
+	for _, scenario := range scenarios {
+		s := scenario
+
+		t.Run(s.desc, s.test)
+	}
+}
 
 type isInterfaceSatisfied_interface interface {
 	Do(int) string
@@ -104,7 +195,11 @@ func TestIsInterfaceSatisfied(t *testing.T) {
 					Once()
 
 				err := isInterfaceSatisfied(sd, expectedInterfaceType, rootPlanName)
-				assert.Equal(t, ErrPlanHavingAmbiguousMethods.Err(expectedMethod, toString(expectedMethodSet), strings.Join(expectedLocations, "; ")), err)
+				assert.Equal(
+					t,
+					ErrPlanHavingAmbiguousMethods.Err(expectedMethod, toString(expectedMethodSet), strings.Join(expectedLocations, "; ")),
+					err,
+				)
 				mock.AssertExpectationsForObjects(t, sdMock)
 			},
 		},

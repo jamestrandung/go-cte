@@ -2,9 +2,10 @@ package cte
 
 import (
 	"fmt"
-	"github.com/jamestrandung/go-data-structure/set"
 	"reflect"
 	"strings"
+
+	"github.com/jamestrandung/go-data-structure/set"
 )
 
 type methodLocation struct {
@@ -72,8 +73,8 @@ type iStructDisassembler interface {
 	isAvailableMoreThanOnce(m method) bool
 	findAvailableMethods(name string) (set.HashSet[method], bool)
 	findMethodLocations(methodSet set.HashSet[method], rootPlanName string) []string
-	extractAvailableMethods(t reflect.Type) []method
 	addAvailableMethod(rootPlanName string, cs componentStack, m method)
+	extractAvailableMethods(t reflect.Type) []method
 	performMethodExtraction(t reflect.Type, rootPlanName string, cs componentStack) []method
 	extractChildMethods(t reflect.Type, rootPlanName string, cs componentStack) []method
 	extractOwnMethods(t reflect.Type, rootPlanName string, cs componentStack, hoistedMethods []method) []method
@@ -128,11 +129,6 @@ func (sd structDisassembler) findMethodLocations(methodSet set.HashSet[method], 
 	return methodLocations
 }
 
-func (sd structDisassembler) extractAvailableMethods(t reflect.Type) []method {
-	var cs componentStack
-	return sd.performMethodExtraction(t, extractFullNameFromType(t), cs)
-}
-
 func (sd structDisassembler) addAvailableMethod(rootPlanName string, cs componentStack, m method) {
 	methodSet, ok := sd.availableMethods[m.name]
 	if !ok {
@@ -154,6 +150,11 @@ func (sd structDisassembler) addAvailableMethod(rootPlanName string, cs componen
 	}
 
 	methodSet.Add(m)
+}
+
+func (sd structDisassembler) extractAvailableMethods(t reflect.Type) []method {
+	var cs componentStack
+	return sd.performMethodExtraction(t, extractFullNameFromType(t), cs)
 }
 
 func (sd structDisassembler) performMethodExtraction(t reflect.Type, rootPlanName string, cs componentStack) []method {
