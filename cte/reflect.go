@@ -100,11 +100,11 @@ func newStructDisassembler() structDisassembler {
 }
 
 func (sd structDisassembler) self() iStructDisassembler {
-	if sd.itself != nil {
-		return sd.itself
+	if sd.itself == nil {
+		return sd
 	}
 
-	return sd
+	return sd.itself
 }
 
 func (sd structDisassembler) isAvailableMoreThanOnce(m method) bool {
