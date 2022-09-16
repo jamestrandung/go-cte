@@ -1,31 +1,31 @@
 package config
 
 import (
-	"fmt"
+    "fmt"
 
-	"github.com/jamestrandung/go-cte/cte"
+    "github.com/jamestrandung/go-cte/cte"
 )
 
 var Engine = &CostEngine{
-	Engine: cte.NewEngine(),
+    Engine: cte.NewEngine(),
 }
 
 var printDebugLog = false
 
 func Print(values ...any) {
-	if printDebugLog {
-		fmt.Println(values...)
-	}
+    if printDebugLog {
+        fmt.Println(values...)
+    }
 }
 
 func Printf(format string, values ...any) {
-	if printDebugLog {
-		fmt.Printf(format, values...)
-	}
+    if printDebugLog {
+        fmt.Printf(format, values...)
+    }
 }
 
 type CostEngine struct {
-	cte.Engine
-	// Add common utilities like logger, statsD, UCM client, etc.
-	// for all component codes to share.
+    cte.Engine
+    // Add common utilities like logger, statsD, UCM client, etc.
+    // for all component codes to share.
 }
