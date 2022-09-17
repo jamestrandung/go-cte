@@ -15,6 +15,13 @@ type registeredComputer struct {
 	metadata parsedMetadata
 }
 
+//go:generate mockery --name iEngine --case=underscore --inpackage
+type iEngine interface {
+	findAnalyzedPlan(planName string, curPlanValue reflect.Value) analyzedPlan
+	getComputer(componentID string) (registeredComputer, bool)
+	getPlan(planName string) (analyzedPlan, bool)
+}
+
 type Engine struct {
 	computers map[string]registeredComputer
 	plans     map[string]analyzedPlan
@@ -318,4 +325,14 @@ func (e Engine) findAnalyzedPlan(planName string, curPlanValue reflect.Value) an
 	}
 
 	return ap
+}
+
+func (e Engine) getComputer(componentID string) (registeredComputer, bool) {
+	c, ok := e.computers[componentID]
+	return c, ok
+}
+
+func (e Engine) getPlan(planName string) (analyzedPlan, bool) {
+	p, ok := e.plans[planName]
+	return p, ok
 }
