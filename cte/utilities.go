@@ -2,10 +2,11 @@ package cte
 
 import (
 	"fmt"
-	"github.com/jamestrandung/go-data-structure/set"
 	"reflect"
 	"sort"
 	"strings"
+
+	"github.com/jamestrandung/go-data-structure/set"
 )
 
 func swallowErrPlanExecutionEndingEarly(err error) error {
@@ -22,9 +23,7 @@ func extractFullNameFromValue(v any) string {
 }
 
 var extractFullNameFromType = func(t reflect.Type) string {
-	if t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
+	t = extractNonPointerType(t)
 
 	return t.PkgPath() + "/" + t.Name()
 }
@@ -49,11 +48,15 @@ func extractFieldTypes(field reflect.StructField) (isPointerType bool, valueType
 }
 
 var extractUnderlyingType = func(v reflect.Value) reflect.Type {
-	if v.Kind() == reflect.Pointer {
-		return v.Elem().Type()
+	return extractNonPointerType(v.Type())
+}
+
+var extractNonPointerType = func(t reflect.Type) reflect.Type {
+	if t.Kind() == reflect.Pointer {
+		return t.Elem()
 	}
 
-	return v.Type()
+	return t
 }
 
 func toString[T comparable](s set.HashSet[T]) string {

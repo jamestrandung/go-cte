@@ -170,11 +170,7 @@ func (sd *structDisassembler) performMethodExtraction(t reflect.Type, rootPlanNa
 func (sd *structDisassembler) extractChildMethods(t reflect.Type, rootPlanName string, cs componentStack) []method {
 	var hoistedMethods []method
 
-	actualType := t
-	if actualType.Kind() == reflect.Pointer {
-		actualType = t.Elem()
-	}
-
+	actualType := extractNonPointerType(t)
 	if actualType.Kind() == reflect.Struct {
 		for i := 0; i < actualType.NumField(); i++ {
 			rf := actualType.Field(i)
